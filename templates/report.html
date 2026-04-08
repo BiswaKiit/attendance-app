@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Report</title>
+</head>
+<body>
+
+<h2>📊 Attendance Report</h2>
+
+<p><b>Date:</b> {{ date }}</p>
+<p><b>Hostel:</b> {{ hostel }}</p>
+
+<hr>
+
+<h3>📘 FULL REPORT</h3>
+
+{% for floor, years in data.items() %}
+    <h4>{{ floor }} Floor</h4>
+    <table border="1" cellpadding="5">
+        <tr>
+            <th>Year</th>
+            <th>Strength</th>
+            <th>Present</th>
+            <th>Leave</th>
+            <th>Absent</th>
+        </tr>
+
+        {% for year, d in years.items() %}
+        <tr>
+            <td>{{ year }}</td>
+            <td>{{ d.Strength }}</td>
+            <td>{{ d.Present }}</td>
+            <td>{{ d.Leave }}</td>
+            <td>{{ d.Absent }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+{% endfor %}
+
+<hr>
+
+<h3>📗 SUMMARY REPORT 1 (Year-wise)</h3>
+
+<table border="1" cellpadding="5">
+<tr>
+    <th>Year</th>
+    <th>Strength</th>
+    <th>Present</th>
+    <th>Leave (Leave+Absent)</th>
+</tr>
+
+{% for year, d in summary_year.items() %}
+<tr>
+    <td>{{ year }}</td>
+    <td>{{ d.Strength }}</td>
+    <td>{{ d.Present }}</td>
+    <td>{{ d.Leave }}</td>
+</tr>
+{% endfor %}
+</table>
+
+<hr>
+
+<h3>📙 SUMMARY REPORT 2 (Overall)</h3>
+
+<table border="1" cellpadding="5">
+<tr><td>Total Strength</td><td>{{ total_strength }}</td></tr>
+<tr><td>Total Present</td><td>{{ total_present }}</td></tr>
+<tr><td>Total Leave</td><td>{{ total_leave }}</td></tr>
+</table>
+
+</body>
+</html>

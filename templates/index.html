@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attendance Entry</title>
+</head>
+<body>
+
+<h2>📘 Student Attendance Entry</h2>
+
+<form method="POST">
+
+    Hostel Name: <input type="text" name="hostel" required><br><br>
+    Date: <input type="date" name="date" required><br><br>
+
+    {% for floor in floors %}
+        <h3>🏢 {{ floor }} Floor</h3>
+
+        {% for year in years %}
+            <b>{{ year }}</b><br>
+
+            Strength: <input type="number" name="{{floor}}_{{year}}_strength"><br>
+            Present: <input type="number" name="{{floor}}_{{year}}_present"><br>
+            Leave: <input type="number" name="{{floor}}_{{year}}_leave"><br>
+            Absent: <input type="number" name="{{floor}}_{{year}}_absent"><br><br>
+        {% endfor %}
+    {% endfor %}
+
+    <button type="submit">🚀 Generate Report</button>
+</form>
+
+</body>
+</html>
