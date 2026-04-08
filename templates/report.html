@@ -1,42 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Report</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
-<style>
-body {font-family: Arial; padding:10px;}
-.card {background:#f9f9f9; padding:10px; margin-bottom:10px; border-radius:10px;}
-</style>
+<title>Report</title>
 </head>
 
 <body>
 
 <h2>📊 Report</h2>
 
-{% for d in data %}
-<div class="card">
+{% if report_type == "Full" %}
+<h3>Full Report</h3>
 
-<b>Date:</b> {{d.date}} <br>
-<b>Floor:</b> {{d.floor}} <br>
-<b>Strength:</b> {{d.floor_strength}} <br>
+{% for d in data %}
+<h4>{{d.floor}} ({{d.floor_strength}})</h4>
 
 <table border="1" width="100%">
-<tr><th>Year</th><th>P</th><th>L</th><th>A</th></tr>
+<tr><th>Year</th><th>Str</th><th>P</th><th>L</th><th>A</th></tr>
 
-{% for year, y in d.year_data.items() %}
+{% for y, v in d.year_data.items() %}
 <tr>
-<td>{{year}}</td>
-<td>{{y.Present}}</td>
-<td>{{y.Leave}}</td>
-<td>{{y.Absent}}</td>
+<td>{{y}}</td>
+<td>{{v.Strength}}</td>
+<td>{{v.Present}}</td>
+<td>{{v.Leave}}</td>
+<td>{{v.Absent}}</td>
 </tr>
 {% endfor %}
+</table>
+{% endfor %}
 
+{% elif report_type == "Partly" %}
+<h3>Partly Report</h3>
+
+<table border="1">
+<tr><th>Year</th><th>Strength</th><th>Present</th><th>Leave</th></tr>
+
+{% for y, v in year_summary.items() %}
+<tr>
+<td>{{y}}</td>
+<td>{{v.Strength}}</td>
+<td>{{v.Present}}</td>
+<td>{{v.Leave}}</td>
+</tr>
+{% endfor %}
 </table>
 
-</div>
-{% endfor %}
+{% else %}
+<h3>Summary Report</h3>
+
+<table border="1">
+<tr><td>Total Strength</td><td>{{total_strength}}</td></tr>
+<tr><td>Total Present</td><td>{{total_present}}</td></tr>
+<tr><td>Total Leave</td><td>{{total_leave}}</td></tr>
+</table>
+
+{% endif %}
 
 </body>
 </html>
