@@ -1,32 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Attendance Entry</title>
+<title>Attendance App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {font-family: Arial; background:#f2f2f2; padding:10px;}
+.card {background:white; padding:15px; border-radius:10px; margin-bottom:15px;}
+input, select {width:100%; padding:8px; margin:5px 0;}
+button {background:#4CAF50; color:white; padding:10px; border:none; width:100%;}
+.footer {background:#333; color:white; text-align:center; padding:10px; position:fixed; bottom:0; width:100%;}
+</style>
 </head>
+
 <body>
 
-<h2>📘 Student Attendance Entry</h2>
+<h2>📱 Attendance Entry</h2>
 
+<div class="card">
 <form method="POST">
 
-    Hostel Name: <input type="text" name="hostel" required><br><br>
-    Date: <input type="date" name="date" required><br><br>
+Hostel:
+<input type="text" name="hostel" value="KP-15">
 
-    {% for floor in floors %}
-        <h3>🏢 {{ floor }} Floor</h3>
+Date:
+<input type="date" name="date" required>
 
-        {% for year in years %}
-            <b>{{ year }}</b><br>
+Floor:
+<select name="floor">
+{% for f in floors %}
+<option>{{f}}</option>
+{% endfor %}
+</select>
 
-            Strength: <input type="number" name="{{floor}}_{{year}}_strength"><br>
-            Present: <input type="number" name="{{floor}}_{{year}}_present"><br>
-            Leave: <input type="number" name="{{floor}}_{{year}}_leave"><br>
-            Absent: <input type="number" name="{{floor}}_{{year}}_absent"><br><br>
-        {% endfor %}
-    {% endfor %}
+Floor Strength:
+<input type="number" name="floor_strength" required>
 
-    <button type="submit">🚀 Generate Report</button>
+<hr>
+
+{% for year in years %}
+<b>{{year}}</b>
+Present <input type="number" name="{{year}}_present">
+Leave <input type="number" name="{{year}}_leave">
+Absent <input type="number" name="{{year}}_absent">
+{% endfor %}
+
+<button type="submit">💾 Save Floor Data</button>
+
 </form>
+
+<p>{{message}}</p>
+</div>
+
+<div class="card">
+<form method="POST" action="/report">
+
+<select name="report_type">
+<option>Full</option>
+<option>Summary</option>
+</select>
+
+Month:
+<input type="month" name="month">
+
+<button type="submit">📊 Generate Report</button>
+
+</form>
+</div>
+
+<div class="footer">
+Created by Biswa Ranjan Mishra
+</div>
 
 </body>
 </html>

@@ -1,73 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Report</title>
+<title>Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {font-family: Arial; padding:10px;}
+.card {background:#f9f9f9; padding:10px; margin-bottom:10px; border-radius:10px;}
+</style>
 </head>
+
 <body>
 
-<h2>📊 Attendance Report</h2>
+<h2>📊 Report</h2>
 
-<p><b>Date:</b> {{ date }}</p>
-<p><b>Hostel:</b> {{ hostel }}</p>
+{% for d in data %}
+<div class="card">
 
-<hr>
+<b>Date:</b> {{d.date}} <br>
+<b>Floor:</b> {{d.floor}} <br>
+<b>Strength:</b> {{d.floor_strength}} <br>
 
-<h3>📘 FULL REPORT</h3>
+<table border="1" width="100%">
+<tr><th>Year</th><th>P</th><th>L</th><th>A</th></tr>
 
-{% for floor, years in data.items() %}
-    <h4>{{ floor }} Floor</h4>
-    <table border="1" cellpadding="5">
-        <tr>
-            <th>Year</th>
-            <th>Strength</th>
-            <th>Present</th>
-            <th>Leave</th>
-            <th>Absent</th>
-        </tr>
-
-        {% for year, d in years.items() %}
-        <tr>
-            <td>{{ year }}</td>
-            <td>{{ d.Strength }}</td>
-            <td>{{ d.Present }}</td>
-            <td>{{ d.Leave }}</td>
-            <td>{{ d.Absent }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-{% endfor %}
-
-<hr>
-
-<h3>📗 SUMMARY REPORT 1 (Year-wise)</h3>
-
-<table border="1" cellpadding="5">
+{% for year, y in d.year_data.items() %}
 <tr>
-    <th>Year</th>
-    <th>Strength</th>
-    <th>Present</th>
-    <th>Leave (Leave+Absent)</th>
-</tr>
-
-{% for year, d in summary_year.items() %}
-<tr>
-    <td>{{ year }}</td>
-    <td>{{ d.Strength }}</td>
-    <td>{{ d.Present }}</td>
-    <td>{{ d.Leave }}</td>
+<td>{{year}}</td>
+<td>{{y.Present}}</td>
+<td>{{y.Leave}}</td>
+<td>{{y.Absent}}</td>
 </tr>
 {% endfor %}
+
 </table>
 
-<hr>
-
-<h3>📙 SUMMARY REPORT 2 (Overall)</h3>
-
-<table border="1" cellpadding="5">
-<tr><td>Total Strength</td><td>{{ total_strength }}</td></tr>
-<tr><td>Total Present</td><td>{{ total_present }}</td></tr>
-<tr><td>Total Leave</td><td>{{ total_leave }}</td></tr>
-</table>
+</div>
+{% endfor %}
 
 </body>
 </html>
