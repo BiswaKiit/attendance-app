@@ -5,19 +5,51 @@ import os
 
 app = Flask(__name__)
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+# 🔥 Your Render PostgreSQL URL (fallback added)
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://attendance_user:hIEyKUeKKblpFAYtYXjcDp5GCXGQZcbl@dpg-d7b5hdjuibrs73b6m1d0-a.oregon-postgres.render.com/attendance_2cet"
+)
 
 floors = ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor", "4th Floor"]
 years = ["1st Year", "2nd Year", "3rd Year", "4th Year"]
 
+
+# ✅ DB CONNECTION
 def get_conn():
     return psycopg2.connect(DATABASE_URL)
+
+
+# ✅ AUTO CREATE TABLE
+def create_table():
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS attendance (
+        id SERIAL PRIMARY KEY,
+        date DATE,
+        hostel TEXT,
+        floor TEXT,
+        year TEXT,
+        strength INT,
+        present INT,
+        leave INT,
+        absent INT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
 
 
 def to_int(val):
     return int(val) if val and val.strip() else 0
 
 
+# =========================
+# 🏠 HOME PAGE
+# =========================
 @app.route("/", methods=["GET", "POST"])
 def index():
     message = ""
@@ -32,8 +64,8 @@ def index():
             conn = get_conn()
             cur = conn.cursor()
 
-            # ❗ DUPLICATE CHECK
-            cur.execute("SELECT * FROM attendance WHERE date=%s AND floor=%s", (date, floor))
+            # 🔥 DUPLICATE CHECK (FLOOR + DATE)
+            cur.execute("SELECT 1 FROM attendance WHERE date=%s AND floor=%s", (date, floor))
             if cur.fetchone():
                 message = f"❌ Data already punched for {floor} on {date}"
                 conn.close()
@@ -48,6 +80,7 @@ def index():
                 leave = to_int(request.form.get(f"{year}_leave"))
                 absent = to_int(request.form.get(f"{year}_absent"))
 
+                # ✅ Year validation
                 if (present + leave + absent) != strength:
                     valid = False
 
@@ -58,12 +91,13 @@ def index():
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
                 """, (date, hostel, floor, year, strength, present, leave, absent))
 
+            # ✅ Floor validation
             if total_year_strength != floor_strength:
                 valid = False
 
             if not valid:
                 conn.rollback()
-                message = "❌ Data mismatch!"
+                message = "❌ Data mismatch! Please check inputs."
             else:
                 conn.commit()
                 message = "✅ Saved Successfully!"
@@ -71,21 +105,32 @@ def index():
             conn.close()
 
         except Exception as e:
-            message = str(e)
+            message = f"❌ Error: {str(e)}"
 
     return render_template("index.html", floors=floors, years=years, message=message)
 
 
+# =========================
+# 📊 REPORT PAGE (WITH MONTH FILTER)
+# =========================
 @app.route("/report", methods=["POST"])
 def report():
     report_type = request.form.get("report_type")
+    month = request.form.get("month")  # format: YYYY-MM
 
     conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute("SELECT date,floor,year,strength,present,leave,absent FROM attendance")
-    rows = cur.fetchall()
+    if month:
+        cur.execute("""
+        SELECT date,floor,year,strength,present,leave,absent
+        FROM attendance
+        WHERE TO_CHAR(date, 'YYYY-MM')=%s
+        """, (month,))
+    else:
+        cur.execute("SELECT date,floor,year,strength,present,leave,absent FROM attendance")
 
+    rows = cur.fetchall()
     conn.close()
 
     data = {}
@@ -122,13 +167,21 @@ def report():
                            year_summary=year_summary)
 
 
-# 📊 EXCEL DOWNLOAD
+# =========================
+# 📥 EXCEL DOWNLOAD (MONTHLY)
+# =========================
 @app.route("/download")
 def download():
+    month = request.args.get("month")
+
     conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM attendance")
+    if month:
+        cur.execute("SELECT * FROM attendance WHERE TO_CHAR(date,'YYYY-MM')=%s", (month,))
+    else:
+        cur.execute("SELECT * FROM attendance")
+
     rows = cur.fetchall()
     conn.close()
 
@@ -143,5 +196,9 @@ def download():
     return send_file(file, as_attachment=True)
 
 
+# =========================
+# 🚀 START APP
+# =========================
 if __name__ == "__main__":
-    app.run()
+    create_table()   # 🔥 AUTO CREATE TABLE
+    app.run(debug=True)
