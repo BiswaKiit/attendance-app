@@ -1,63 +1,77 @@
-<a href="/download"><button>📥 Download Excel</button></a>
-<button onclick="window.print()">📤 Share / Print</button>
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Report</title>
+    <title>Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body { background: #eef2f7; }
+        .header { background: #1cc88a; color: white; padding: 15px; text-align: center; }
+        .card { border-radius: 15px; }
+    </style>
 </head>
 
 <body>
 
-<h2>📊 Report</h2>
+<div class="header">
+    <h4>📊 Attendance Report</h4>
+</div>
 
-{% if report_type == "Full" %}
-<h3>Full Report</h3>
+<div class="container mt-3">
 
-{% for d in data %}
-<h4>{{d.floor}} ({{d.floor_strength}})</h4>
+    <!-- SUMMARY -->
+    <div class="card p-3 mb-3">
+        <h5>🔢 Summary</h5>
+        <p>Total Strength: {{ total_strength }}</p>
+        <p>Total Present: {{ total_present }}</p>
+        <p>Total Leave: {{ total_leave }}</p>
+    </div>
 
-<table border="1" width="100%">
-<tr><th>Year</th><th>Str</th><th>P</th><th>L</th><th>A</th></tr>
+    <!-- YEAR SUMMARY -->
+    <div class="card p-3 mb-3">
+        <h5>🎓 Year Summary</h5>
+        {% for y, v in year_summary.items() %}
+        <p>{{ y }} → Strength: {{ v.Strength }}, Present: {{ v.Present }}, Leave: {{ v.Leave }}</p>
+        {% endfor %}
+    </div>
 
-{% for y, v in d.year_data.items() %}
-<tr>
-<td>{{y}}</td>
-<td>{{v.Strength}}</td>
-<td>{{v.Present}}</td>
-<td>{{v.Leave}}</td>
-<td>{{v.Absent}}</td>
-</tr>
-{% endfor %}
-</table>
-{% endfor %}
+    <!-- FLOOR DATA -->
+    {% for floor, details in data.items() %}
+    <div class="card p-3 mb-3">
+        <h5>{{ floor }}</h5>
 
-{% elif report_type == "Partly" %}
-<h3>Partly Report</h3>
+        {% for y, d in details.items() %}
+        <p>
+            {{ y }} →
+            S: {{ d.Strength }},
+            P: {{ d.Present }},
+            L: {{ d.Leave }},
+            A: {{ d.Absent }}
+        </p>
+        {% endfor %}
+    </div>
+    {% endfor %}
 
-<table border="1">
-<tr><th>Year</th><th>Strength</th><th>Present</th><th>Leave</th></tr>
+    <!-- ACTION BUTTONS -->
+    <div class="text-center mb-4">
 
-{% for y, v in year_summary.items() %}
-<tr>
-<td>{{y}}</td>
-<td>{{v.Strength}}</td>
-<td>{{v.Present}}</td>
-<td>{{v.Leave}}</td>
-</tr>
-{% endfor %}
-</table>
+        <a href="/download" class="btn btn-success">⬇ Download Excel</a>
 
-{% else %}
-<h3>Summary Report</h3>
+        <button onclick="shareReport()" class="btn btn-primary">📤 Share</button>
 
-<table border="1">
-<tr><td>Total Strength</td><td>{{total_strength}}</td></tr>
-<tr><td>Total Present</td><td>{{total_present}}</td></tr>
-<tr><td>Total Leave</td><td>{{total_leave}}</td></tr>
-</table>
+    </div>
 
-{% endif %}
+</div>
+
+<script>
+function shareReport() {
+    let text = "Attendance Report:\nTotal Strength: {{total_strength}}, Present: {{total_present}}, Leave: {{total_leave}}";
+    let url = "https://wa.me/?text=" + encodeURIComponent(text);
+    window.open(url, '_blank');
+}
+</script>
 
 </body>
 </html>
