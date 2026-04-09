@@ -1,34 +1,101 @@
+/* 🌐 General Reset */
 body {
-    background: #f1f5f9;
+    font-family: Arial, sans-serif;
+    background: #f5f7fa;
+    margin: 0;
+    padding: 0;
 }
 
-.app-header {
+/* 📦 Main Container */
+.container {
+    max-width: 600px;
+    margin: auto;
+    background: white;
+    padding: 15px;
+    margin-top: 10px;
+    border-radius: 8px;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 🧾 Header */
+.header {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px;
-    background: #0f172a;
-    color: white;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    justify-content: center;
+    margin-bottom: 10px;
 }
 
 .logo {
-    width: 35px;
-    height: 35px;
+    width: 40px;
+    height: 40px;
 }
 
-.card {
-    border-radius: 15px;
+/* 🏷 Titles */
+h2, h3 {
+    text-align: center;
+    margin: 5px 0;
 }
 
+/* 📝 Form Inputs */
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0 10px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+/* 🎯 Buttons */
+button {
+    width: 100%;
+    padding: 10px;
+    background: #007bff;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+/* 📊 Report Section */
+p {
+    background: #f1f1f1;
+    padding: 8px;
+    border-radius: 5px;
+    margin: 5px 0;
+}
+
+/* ➖ Divider */
+hr {
+    margin: 15px 0;
+}
+
+/* 📱 Footer */
 .footer {
     position: fixed;
     bottom: 0;
     width: 100%;
-    background: #0f172a;
+    background: #007bff;
     color: white;
     text-align: center;
-    padding: 6px;
+    padding: 8px;
+    font-size: 14px;
+}
+
+/* 📱 Mobile Optimization */
+@media (max-width: 600px) {
+    .container {
+        margin: 5px;
+        padding: 10px;
+    }
+
+    input, select, button {
+        font-size: 14px;
+    }
 }

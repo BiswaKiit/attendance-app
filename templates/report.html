@@ -1,9 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Report</title>
-
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -11,60 +9,34 @@
 
 <div class="container">
 
-    <h1>📊 Attendance Report</h1>
+    <h2>Attendance Report</h2>
 
-    <!-- SUMMARY -->
     {% if report_type == "summary" %}
-        <div class="card">
-            <h2>Summary</h2>
-            <p>Total Strength: {{ total_strength }}</p>
-            <p>Total Present: {{ total_present }}</p>
-            <p>Total Leave: {{ total_leave }}</p>
-        </div>
+        <p>Total Strength: {{ total_strength }}</p>
+        <p>Total Present: {{ total_present }}</p>
+        <p>Total Leave: {{ total_leave }}</p>
     {% endif %}
 
-    <!-- PARTLY -->
     {% if report_type == "partly" %}
-        <div class="card">
-            <h2>Year-wise Summary</h2>
-
-            {% for year, val in year_summary.items() %}
-                <p>
-                    <b>{{ year }}</b> →
-                    Strength: {{ val.Strength }},
-                    Present: {{ val.Present }},
-                    Leave: {{ val.Leave }}
-                </p>
-            {% endfor %}
-        </div>
+        {% for year, val in year_summary.items() %}
+            <p>{{ year }} → Strength: {{ val.Strength }}, Present: {{ val.Present }}, Leave: {{ val.Leave }}</p>
+        {% endfor %}
     {% endif %}
 
-    <!-- FULL -->
     {% if report_type == "full" %}
         {% for floor, years in data.items() %}
-            <div class="card">
-                <h2>{{ floor }}</h2>
-
-                {% for year, val in years.items() %}
-                    <p>
-                        <b>{{ year }}</b> →
-                        Strength: {{ val.Strength }},
-                        Present: {{ val.Present }},
-                        Leave: {{ val.Leave }},
-                        Absent: {{ val.Absent }}
-                    </p>
-                {% endfor %}
-            </div>
+            <h3>{{ floor }}</h3>
+            {% for year, val in years.items() %}
+                <p>{{ year }} → Strength: {{ val.Strength }}, Present: {{ val.Present }}, Leave: {{ val.Leave }}, Absent: {{ val.Absent }}</p>
+            {% endfor %}
         {% endfor %}
     {% endif %}
 
     <hr>
 
-    <!-- ACTION BUTTONS -->
-    <div class="actions">
-        <a href="/download" class="btn">📥 Download Excel</a>
-        <button onclick="shareReport()" class="btn">📤 Share</button>
-    </div>
+    <!-- Buttons -->
+    <a href="/download"><button>Download Excel</button></a>
+    <button onclick="shareReport()">Share</button>
 
 </div>
 
@@ -73,11 +45,11 @@ function shareReport() {
     if (navigator.share) {
         navigator.share({
             title: "Attendance Report",
-            text: "Check this attendance report",
+            text: "Attendance Report",
             url: window.location.href
         });
     } else {
-        alert("Sharing not supported on this device");
+        alert("Sharing not supported");
     }
 }
 </script>

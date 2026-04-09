@@ -1,13 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>KP-15 Attendance</title>
+    <title>Attendance App</title>
 
-    <!-- Favicon -->
     <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}">
-
-    <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -18,49 +14,51 @@
     <!-- Header -->
     <div class="header">
         <img src="{{ url_for('static', filename='logo.png') }}" class="logo">
-        <h1>KP-15 Attendance</h1>
+        <h2>KP-15 Attendance</h2>
     </div>
 
-    <!-- Message -->
+    <h3>Enter Attendance</h3>
+
     {% if message %}
-        <div class="message">{{ message }}</div>
+        <p style="color:red;">{{ message }}</p>
     {% endif %}
 
-    <!-- Form -->
     <form method="POST">
 
-        <label>Date</label>
-        <input type="date" name="date" required>
+        Date:
+        <input type="date" name="date" required><br><br>
 
-        <label>Floor</label>
-        <select name="floor" required>
+        Floor:
+        <select name="floor">
             {% for f in floors %}
                 <option value="{{ f }}">{{ f }}</option>
             {% endfor %}
-        </select>
+        </select><br><br>
 
-        <label>Floor Strength</label>
-        <input type="number" name="floor_strength">
-
-        <hr>
+        Floor Strength:
+        <input type="number" name="floor_strength"><br><br>
 
         {% for year in years %}
-        <div class="year-block">
-            <h3>{{ year }}</h3>
+            <h4>{{ year }}</h4>
 
-            <input type="number" name="{{ year }}_strength" placeholder="Strength">
-            <input type="number" name="{{ year }}_present" placeholder="Present">
-            <input type="number" name="{{ year }}_leave" placeholder="Leave">
-            <input type="number" name="{{ year }}_absent" placeholder="Absent">
-        </div>
+            Strength:
+            <input type="number" name="{{ year }}_strength">
+
+            Present:
+            <input type="number" name="{{ year }}_present">
+
+            Leave:
+            <input type="number" name="{{ year }}_leave">
+
+            Absent:
+            <input type="number" name="{{ year }}_absent"><br><br>
         {% endfor %}
 
-        <button type="submit">💾 Save Data</button>
+        <button type="submit">Save</button>
     </form>
 
     <hr>
 
-    <!-- Report -->
     <form method="POST" action="/report">
         <select name="report_type">
             <option value="full">Full Report</option>
@@ -68,9 +66,14 @@
             <option value="summary">Summary</option>
         </select>
 
-        <button type="submit">📊 Generate Report</button>
+        <button type="submit">Generate Report</button>
     </form>
 
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    Created by Biswa Ranjan Mishra
 </div>
 
 </body>
