@@ -1,99 +1,59 @@
-/* 🌐 Base */
 body {
-    font-family: Arial, sans-serif;
+    font-family: Arial;
     margin: 0;
     background: #f5f7fa;
 }
 
-/* 📦 Container */
 .container {
-    width: 100%;
     max-width: 500px;
     margin: auto;
     padding: 10px;
-    padding-bottom: 120px; /* space for bottom bar */
 }
 
-/* 🧾 Header */
-.header {
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-/* 📝 Inputs */
 input, select {
     width: 100%;
     padding: 8px;
-    margin: 4px 0;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-    box-sizing: border-box;
+    margin: 5px 0;
 }
 
-/* 📊 Year Block */
 .year-block {
-    background: #ffffff;
+    background: white;
     padding: 10px;
     margin-bottom: 10px;
-    border-radius: 8px;
     border-left: 5px solid #007bff;
 }
 
-/* Row */
 .row {
     display: flex;
     gap: 5px;
 }
 
-/* ❌ Error */
-.error {
-    border: 2px solid red !important;
-}
-
-/* ✅ Success */
-.success {
-    border: 2px solid green !important;
-}
-
-/* 💾 Floating Save Button */
-.fab-save {
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    background: #28a745;
-    color: white;
-    border: none;
-    padding: 14px 18px;
-    border-radius: 50px;
-    font-size: 16px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    cursor: pointer;
-}
-
-/* 📊 Bottom Report Bar */
-.bottom-bar {
-    position: fixed;
-    bottom: 0;
+button {
     width: 100%;
-    background: #007bff;
-    display: flex;
-    justify-content: space-around;
-    padding: 10px 0;
+    padding: 10px;
+    margin-top: 10px;
 }
 
-/* Buttons inside bottom bar */
-.bottom-bar button {
+.success {
+    border: 2px solid green;
+}
+
+.error {
+    border: 2px solid red;
+}
+
+/* 📊 Report */
+.report-box {
     background: white;
-    color: #007bff;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    font-size: 14px;
+    padding: 10px;
+    margin-top: 20px;
 }
 
-/* Disabled Save Button */
-button:disabled {
-    background: gray !important;
-    cursor: not-allowed;
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 10px;
+    background: #007bff;
+    color: white;
+    margin-top: 20px;
 }

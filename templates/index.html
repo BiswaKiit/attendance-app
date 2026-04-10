@@ -10,14 +10,11 @@
 
 <div class="container">
 
-    <div class="header">
-        <h2>Hostel Attendance</h2>
-    </div>
+    <h2>Hostel Attendance</h2>
 
-    <form method="POST" id="attendanceForm">
+    <form method="POST">
 
         <input type="date" name="date" required>
-
         <input type="text" name="hostel" value="KP-15">
 
         <select name="floor">
@@ -26,7 +23,6 @@
             {% endfor %}
         </select>
 
-        <!-- 🔢 AUTO FLOOR TOTAL -->
         <input type="number" id="floor_strength" name="floor_strength" placeholder="Floor Total Strength" readonly>
 
         <hr>
@@ -48,34 +44,37 @@
         </div>
         {% endfor %}
 
-        <button type="submit" class="fab-save" id="saveBtn">💾 Save</button>
+        <button type="submit" id="saveBtn">💾 Save</button>
 
     </form>
+
+    <!-- 📊 REPORT SECTION -->
+    <div class="report-box">
+
+        <h3>Generate Report</h3>
+
+        <form action="/report" method="POST">
+
+            <select name="report_type" required>
+                <option value="">Select Report Type</option>
+                <option value="full">Full Report</option>
+                <option value="part">Part Report</option>
+                <option value="summary">Summary</option>
+            </select>
+
+            <input type="date" name="date">
+            <input type="month" name="month">
+
+            <button type="submit">Generate Report</button>
+
+        </form>
+
+    </div>
 
 </div>
 
-<!-- 📊 Bottom Bar -->
-<div class="bottom-bar">
-
-    <!-- 📅 Month Filter -->
-    <form action="/report" method="POST">
-        <input type="month" name="month" required>
-        <input type="hidden" name="report_type" value="full">
-        <button>Full</button>
-    </form>
-
-    <form action="/report" method="POST">
-        <input type="month" name="month" required>
-        <input type="hidden" name="report_type" value="part">
-        <button>Part</button>
-    </form>
-
-    <form action="/report" method="POST">
-        <input type="month" name="month" required>
-        <input type="hidden" name="report_type" value="summary">
-        <button>Summary</button>
-    </form>
-
+<div class="footer">
+    Created by Biswa Ranjan Mishra
 </div>
 
 <script>
@@ -85,7 +84,6 @@ function getVal(name) {
     return el && el.value ? parseInt(el.value) : 0;
 }
 
-/* 🔢 Auto Floor Total */
 function updateAll() {
     let years = ["1st Year","2nd Year","3rd Year","4th Year"];
     let total = 0;
@@ -97,7 +95,6 @@ function updateAll() {
     document.getElementById("floor_strength").value = total;
 }
 
-/* ✅ Validation + Disable Save */
 function validate(year) {
 
     let s = getVal(year+"_strength");
@@ -106,11 +103,6 @@ function validate(year) {
     let a = getVal(year+"_absent");
 
     let block = document.getElementById(year);
-
-    if (s === 0 && p === 0 && l === 0 && a === 0) {
-        block.classList.remove("error", "success");
-        return;
-    }
 
     if (p + l + a === s) {
         block.classList.add("success");
@@ -123,7 +115,6 @@ function validate(year) {
     checkForm();
 }
 
-/* 🚫 Disable Save if ANY error */
 function checkForm() {
     let blocks = document.querySelectorAll(".year-block");
     let valid = true;

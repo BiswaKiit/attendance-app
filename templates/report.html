@@ -2,51 +2,28 @@
 <html>
 <head>
     <title>Report</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-
 <body>
 
-<div class="container">
+<h2>Report</h2>
 
-    <h2>Attendance Report</h2>
+<a href="/download?month={{month}}">
+    <button>⬇ Download Excel</button>
+</a>
 
-    {% if report_type == "summary" %}
-        <p>Total Strength: {{ total_strength }}</p>
-        <p>Total Present: {{ total_present }}</p>
-        <p>Total Leave: {{ total_leave }}</p>
-    {% endif %}
+<button onclick="shareReport()">📤 Share</button>
 
-    {% if report_type == "partly" %}
-        {% for year, val in year_summary.items() %}
-            <p>{{ year }} → Strength: {{ val.Strength }}, Present: {{ val.Present }}, Leave: {{ val.Leave }}</p>
-        {% endfor %}
-    {% endif %}
+<hr>
 
-    {% if report_type == "full" %}
-        {% for floor, years in data.items() %}
-            <h3>{{ floor }}</h3>
-            {% for year, val in years.items() %}
-                <p>{{ year }} → Strength: {{ val.Strength }}, Present: {{ val.Present }}, Leave: {{ val.Leave }}, Absent: {{ val.Absent }}</p>
-            {% endfor %}
-        {% endfor %}
-    {% endif %}
-
-    <hr>
-
-    <!-- Buttons -->
-    <a href="/download"><button>Download Excel</button></a>
-    <button onclick="shareReport()">Share</button>
-
-</div>
+<h3>Total Strength: {{total_strength}}</h3>
+<h3>Total Present: {{total_present}}</h3>
+<h3>Total Leave: {{total_leave}}</h3>
 
 <script>
 function shareReport() {
     if (navigator.share) {
         navigator.share({
             title: "Attendance Report",
-            text: "Attendance Report",
             url: window.location.href
         });
     } else {
