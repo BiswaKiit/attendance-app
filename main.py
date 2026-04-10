@@ -1,123 +1,78 @@
-from flask import Flask, render_template, request, send_file
-import psycopg2
+from flask import Flask, render_template, request, redirect
 import pandas as pd
 import os
 
 app = Flask(__name__)
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATA_FILE = "data.csv"
 
-floors = ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor", "4th Floor"]
-years = ["1st Year", "2nd Year", "3rd Year", "4th Year"]
+# Create file if not exists
+if not os.path.exists(DATA_FILE):
+    df = pd.DataFrame(columns=["Date", "Present", "Absent", "Vacant"])
+    df.to_csv(DATA_FILE, index=False)
 
-def get_conn():
-    return psycopg2.connect(DATABASE_URL)
 
-def to_int(val):
-    return int(val) if val and str(val).strip() else 0
-
-def create_table():
-    conn = get_conn()
-    cur = conn.cursor()
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS attendance (
-        id SERIAL PRIMARY KEY,
-        date DATE,
-        hostel TEXT,
-        floor TEXT,
-        year TEXT,
-        strength INT,
-        present INT,
-        leave INT,
-        absent INT
-    )
-    """)
-
-    conn.commit()
-    conn.close()
-
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 def index():
-    create_table()
-    message = ""
+    return render_template("index.html")
 
-    if request.method == "POST":
-        floor = request.form.get("floor")
+
+@app.route("/save", methods=["POST"])
+def save():
+    try:
         date = request.form.get("date")
-        hostel = request.form.get("hostel")
+        present = int(request.form.get("present", 0))
+        absent = int(request.form.get("absent", 0))
+        vacant = int(request.form.get("vacant", 0))
 
-        conn = get_conn()
-        cur = conn.cursor()
+        new_data = pd.DataFrame([[date, present, absent, vacant]],
+                                columns=["Date", "Present", "Absent", "Vacant"])
 
-        cur.execute("SELECT 1 FROM attendance WHERE date=%s AND floor=%s", (date, floor))
-        if cur.fetchone():
-            message = "Already entered"
-            conn.close()
-            return render_template("index.html", floors=floors, years=years)
+        df = pd.read_csv(DATA_FILE)
+        df = pd.concat([df, new_data], ignore_index=True)
+        df.to_csv(DATA_FILE, index=False)
 
-        for year in years:
-            cur.execute("""
-            INSERT INTO attendance (date, hostel, floor, year, strength, present, leave, absent)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-            """, (
-                date, hostel, floor, year,
-                to_int(request.form.get(f"{year}_strength")),
-                to_int(request.form.get(f"{year}_present")),
-                to_int(request.form.get(f"{year}_leave")),
-                to_int(request.form.get(f"{year}_absent"))
-            ))
+        return redirect("/")
+    except Exception as e:
+        return f"Error saving data: {str(e)}"
 
-        conn.commit()
-        conn.close()
 
-    return render_template("index.html", floors=floors, years=years)
-
-@app.route("/report", methods=["POST"])
+@app.route("/report", methods=["GET", "POST"])
 def report():
-    report_type = request.form.get("report_type")
-    date = request.form.get("date")
-    month = request.form.get("month")
+    try:
+        df = pd.read_csv(DATA_FILE)
 
-    conn = get_conn()
-    cur = conn.cursor()
+        report_type = request.form.get("type", "full")
+        selected_date = request.form.get("date")
+        selected_month = request.form.get("month")
 
-    if date:
-        cur.execute("SELECT * FROM attendance WHERE date=%s", (date,))
-    elif month:
-        cur.execute("SELECT * FROM attendance WHERE TO_CHAR(date,'YYYY-MM')=%s", (month,))
-    else:
-        cur.execute("SELECT * FROM attendance")
+        # Convert Date column
+        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
 
-    rows = cur.fetchall()
-    conn.close()
+        # FILTERING
+        if selected_date:
+            df = df[df["Date"] == pd.to_datetime(selected_date)]
 
-    total_strength = sum(r[5] for r in rows)
-    total_present = sum(r[6] for r in rows)
-    total_leave = sum(r[7]+r[8] for r in rows)
+        if selected_month:
+            df = df[df["Date"].dt.strftime("%Y-%m") == selected_month]
 
-    return render_template("report.html",
-                           total_strength=total_strength,
-                           total_present=total_present,
-                           total_leave=total_leave,
-                           month=month)
+        # SUMMARY CALCULATION
+        total_present = df["Present"].sum()
+        total_absent = df["Absent"].sum()
+        total_vacant = df["Vacant"].sum()
 
-@app.route("/download")
-def download():
-    month = request.args.get("month")
+        return render_template(
+            "report.html",
+            data=df.to_dict(orient="records"),
+            total_present=total_present,
+            total_absent=total_absent,
+            total_vacant=total_vacant,
+            report_type=report_type
+        )
 
-    conn = get_conn()
-    cur = conn.cursor()
+    except Exception as e:
+        return f"Error generating report: {str(e)}"
 
-    cur.execute("SELECT * FROM attendance WHERE TO_CHAR(date,'YYYY-MM')=%s", (month,))
-    rows = cur.fetchall()
-    conn.close()
-
-    df = pd.DataFrame(rows)
-    file = "attendance.xlsx"
-    df.to_excel(file, index=False)
-
-    return send_file(file, as_attachment=True)
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)

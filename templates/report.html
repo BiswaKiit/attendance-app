@@ -2,28 +2,72 @@
 <html>
 <head>
     <title>Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
+
 <body>
 
-<h2>Report</h2>
+<div class="container">
 
-<a href="/download?month={{month}}">
-    <button>⬇ Download Excel</button>
-</a>
+    <h2>Attendance Report</h2>
 
-<button onclick="shareReport()">📤 Share</button>
+    <!-- SUMMARY -->
+    {% if report_type == "summary" %}
+        <p>Total Present: {{ total_present }}</p>
+        <p>Total Absent: {{ total_absent }}</p>
+        <p>Total Vacant: {{ total_vacant }}</p>
+    {% endif %}
 
-<hr>
+    <!-- PARTLY -->
+    {% if report_type == "part" %}
+        {% for row in data %}
+            <p>
+                {{ row.Date }} → 
+                Present: {{ row.Present }}, 
+                Absent: {{ row.Absent }}, 
+                Vacant: {{ row.Vacant }}
+            </p>
+        {% endfor %}
+    {% endif %}
 
-<h3>Total Strength: {{total_strength}}</h3>
-<h3>Total Present: {{total_present}}</h3>
-<h3>Total Leave: {{total_leave}}</h3>
+    <!-- FULL -->
+    {% if report_type == "full" %}
+        <table width="100%" border="1" cellspacing="0" cellpadding="8">
+            <tr>
+                <th>Date</th>
+                <th>Present</th>
+                <th>Absent</th>
+                <th>Vacant</th>
+            </tr>
+
+            {% for row in data %}
+            <tr>
+                <td>{{ row.Date }}</td>
+                <td>{{ row.Present }}</td>
+                <td>{{ row.Absent }}</td>
+                <td>{{ row.Vacant }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+
+    <hr>
+
+    <!-- BUTTONS -->
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="/download"><button class="btn">Download Excel</button></a>
+        <button class="btn" onclick="shareReport()">Share</button>
+    </div>
+
+</div>
 
 <script>
 function shareReport() {
     if (navigator.share) {
         navigator.share({
             title: "Attendance Report",
+            text: "Attendance Report",
             url: window.location.href
         });
     } else {
