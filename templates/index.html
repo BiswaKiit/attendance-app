@@ -2,10 +2,7 @@
 <html>
 <head>
     <title>Attendance App</title>
-
-    <!-- 📱 Mobile Fix -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -17,33 +14,29 @@
         <h2>Hostel Attendance</h2>
     </div>
 
-    <form method="POST">
+    <form method="POST" id="attendanceForm">
 
-        <!-- 📅 Date -->
         <input type="date" name="date" required>
 
-        <!-- 🏢 Hostel -->
         <input type="text" name="hostel" value="KP-15">
 
-        <!-- 🏢 Floor -->
         <select name="floor">
             {% for f in floors %}
             <option value="{{f}}">{{f}}</option>
             {% endfor %}
         </select>
 
-        <!-- 🧮 Floor Strength -->
-        <input type="number" id="floor_strength" name="floor_strength" placeholder="Floor Total Strength">
+        <!-- 🔢 AUTO FLOOR TOTAL -->
+        <input type="number" id="floor_strength" name="floor_strength" placeholder="Floor Total Strength" readonly>
 
         <hr>
 
-        <!-- 🔁 Years -->
         {% for year in years %}
         <div class="year-block" id="{{year}}">
             <b>{{year}}</b>
 
             <div class="row">
-                <input type="number" placeholder="Strength" name="{{year}}_strength" oninput="validate('{{year}}')">
+                <input type="number" placeholder="Strength" name="{{year}}_strength" oninput="updateAll()">
                 <input type="number" placeholder="Present" name="{{year}}_present" oninput="validate('{{year}}')">
             </div>
 
@@ -55,17 +48,36 @@
         </div>
         {% endfor %}
 
-        <button type="submit">Save Attendance</button>
+        <button type="submit" class="fab-save" id="saveBtn">💾 Save</button>
 
     </form>
 
 </div>
 
-<div class="footer">
-    Created by Biswa ranjan Mishra
+<!-- 📊 Bottom Bar -->
+<div class="bottom-bar">
+
+    <!-- 📅 Month Filter -->
+    <form action="/report" method="POST">
+        <input type="month" name="month" required>
+        <input type="hidden" name="report_type" value="full">
+        <button>Full</button>
+    </form>
+
+    <form action="/report" method="POST">
+        <input type="month" name="month" required>
+        <input type="hidden" name="report_type" value="part">
+        <button>Part</button>
+    </form>
+
+    <form action="/report" method="POST">
+        <input type="month" name="month" required>
+        <input type="hidden" name="report_type" value="summary">
+        <button>Summary</button>
+    </form>
+
 </div>
 
-<!-- ⚡ Smart Validation -->
 <script>
 
 function getVal(name) {
@@ -73,6 +85,19 @@ function getVal(name) {
     return el && el.value ? parseInt(el.value) : 0;
 }
 
+/* 🔢 Auto Floor Total */
+function updateAll() {
+    let years = ["1st Year","2nd Year","3rd Year","4th Year"];
+    let total = 0;
+
+    years.forEach(y => {
+        total += getVal(y+"_strength");
+    });
+
+    document.getElementById("floor_strength").value = total;
+}
+
+/* ✅ Validation + Disable Save */
 function validate(year) {
 
     let s = getVal(year+"_strength");
@@ -94,6 +119,22 @@ function validate(year) {
         block.classList.add("error");
         block.classList.remove("success");
     }
+
+    checkForm();
+}
+
+/* 🚫 Disable Save if ANY error */
+function checkForm() {
+    let blocks = document.querySelectorAll(".year-block");
+    let valid = true;
+
+    blocks.forEach(b => {
+        if (b.classList.contains("error")) {
+            valid = false;
+        }
+    });
+
+    document.getElementById("saveBtn").disabled = !valid;
 }
 
 </script>

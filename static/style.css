@@ -11,17 +11,13 @@ body {
     max-width: 500px;
     margin: auto;
     padding: 10px;
+    padding-bottom: 120px; /* space for bottom bar */
 }
 
 /* 🧾 Header */
 .header {
     text-align: center;
     margin-bottom: 10px;
-}
-
-/* 🏢 Title */
-h2 {
-    margin: 5px 0;
 }
 
 /* 📝 Inputs */
@@ -50,18 +46,6 @@ input, select {
     gap: 5px;
 }
 
-/* Button */
-button {
-    width: 100%;
-    padding: 10px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    margin-top: 10px;
-}
-
 /* ❌ Error */
 .error {
     border: 2px solid red !important;
@@ -72,13 +56,44 @@ button {
     border: 2px solid green !important;
 }
 
-/* 📱 Footer */
-.footer {
-    text-align: center;
-    padding: 8px;
-    background: #007bff;
+/* 💾 Floating Save Button */
+.fab-save {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    background: #28a745;
     color: white;
+    border: none;
+    padding: 14px 18px;
+    border-radius: 50px;
+    font-size: 16px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    cursor: pointer;
+}
+
+/* 📊 Bottom Report Bar */
+.bottom-bar {
     position: fixed;
     bottom: 0;
     width: 100%;
+    background: #007bff;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+}
+
+/* Buttons inside bottom bar */
+.bottom-bar button {
+    background: white;
+    color: #007bff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+/* Disabled Save Button */
+button:disabled {
+    background: gray !important;
+    cursor: not-allowed;
 }
