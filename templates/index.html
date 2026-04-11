@@ -1,133 +1,173 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Attendance App</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<meta charset="UTF-8">
+<title>Attendance Entry</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    margin: 0;
+    padding: 10px;
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+h2 {
+    text-align: center;
+    color: #333;
+}
+
+/* FORM TOP */
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.form-row input, .form-row select {
+    flex: 1;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+/* TABLE */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+th {
+    background: #4facfe;
+    color: white;
+    padding: 8px;
+}
+
+td {
+    padding: 6px;
+}
+
+input[type="number"] {
+    width: 100%;
+    padding: 6px;
+    text-align: center;
+}
+
+/* BUTTON */
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    border: none;
+    background: #00c853;
+    color: white;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #00a844;
+}
+
+/* MESSAGE */
+.msg {
+    text-align: center;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+    table {
+        font-size: 12px;
+    }
+}
+</style>
 </head>
 
 <body>
 
 <div class="container">
+<h2>📊 Attendance Entry</h2>
 
-    <h2>Hostel Attendance</h2>
+<form method="POST">
 
-    <form method="POST">
+<!-- TOP SECTION -->
+<div class="form-row">
+    <input type="date" name="date" required>
 
-        <input type="date" name="date" required>
-        <input type="text" name="hostel" value="KP-15">
-
-        <select name="floor">
-            {% for f in floors %}
-            <option value="{{f}}">{{f}}</option>
-            {% endfor %}
-        </select>
-
-        <input type="number" id="floor_strength" name="floor_strength" placeholder="Floor Total Strength" readonly>
-
-        <hr>
-
-        {% for year in years %}
-        <div class="year-block" id="{{year}}">
-            <b>{{year}}</b>
-
-            <div class="row">
-                <input type="number" placeholder="Strength" name="{{year}}_strength" oninput="updateAll()">
-                <input type="number" placeholder="Present" name="{{year}}_present" oninput="validate('{{year}}')">
-            </div>
-
-            <div class="row">
-                <input type="number" placeholder="Leave" name="{{year}}_leave" oninput="validate('{{year}}')">
-                <input type="number" placeholder="Absent" name="{{year}}_absent" oninput="validate('{{year}}')">
-            </div>
-
-        </div>
+    <select name="floor" required>
+        <option value="">Select Floor</option>
+        {% for f in floors %}
+        <option value="{{f}}">{{f}}</option>
         {% endfor %}
+    </select>
 
-        <button type="submit" id="saveBtn">💾 Save</button>
+    <input type="text" name="hostel" placeholder="Hostel (Default KP-15)">
 
-    </form>
+    <input type="number" name="floor_strength" placeholder="Floor Strength" required>
+</div>
 
-    <!-- 📊 REPORT SECTION -->
-    <div class="report-box">
+<!-- TABLE -->
+<table border="1">
+<tr>
+    <th>Year</th>
+    <th>Strength</th>
+    <th>Present</th>
+    <th>Leave</th>
+    <th>Absent</th>
+</tr>
 
-        <h3>Generate Report</h3>
+{% for y in years %}
+<tr>
+    <td><b>{{y}}</b></td>
 
-        <form action="/report" method="POST">
+    <td><input type="number" name="{{y}}_strength" oninput="calc('{{y}}')"></td>
+    <td><input type="number" name="{{y}}_present" oninput="calc('{{y}}')"></td>
+    <td><input type="number" name="{{y}}_leave" oninput="calc('{{y}}')"></td>
+    <td><input type="number" name="{{y}}_absent" readonly></td>
+</tr>
+{% endfor %}
 
-            <select name="report_type" required>
-                <option value="">Select Report Type</option>
-                <option value="full">Full Report</option>
-                <option value="part">Part Report</option>
-                <option value="summary">Summary</option>
-            </select>
+</table>
 
-            <input type="date" name="date">
-            <input type="month" name="month">
+<button type="submit">💾 Save Data</button>
 
-            <button type="submit">Generate Report</button>
+</form>
 
-        </form>
-
-    </div>
+{% if message %}
+<div class="msg">{{message}}</div>
+{% endif %}
 
 </div>
 
-<div class="footer">
-    Created by Biswa Ranjan Mishra
-</div>
-
+<!-- SMART CALC SCRIPT -->
 <script>
+function calc(year) {
+    let s = parseInt(document.getElementsByName(year+"_strength")[0].value) || 0;
+    let p = parseInt(document.getElementsByName(year+"_present")[0].value) || 0;
+    let l = parseInt(document.getElementsByName(year+"_leave")[0].value) || 0;
 
-function getVal(name) {
-    let el = document.getElementsByName(name)[0];
-    return el && el.value ? parseInt(el.value) : 0;
+    let absent = s - (p + l);
+    if(absent < 0) absent = 0;
+
+    document.getElementsByName(year+"_absent")[0].value = absent;
 }
-
-function updateAll() {
-    let years = ["1st Year","2nd Year","3rd Year","4th Year"];
-    let total = 0;
-
-    years.forEach(y => {
-        total += getVal(y+"_strength");
-    });
-
-    document.getElementById("floor_strength").value = total;
-}
-
-function validate(year) {
-
-    let s = getVal(year+"_strength");
-    let p = getVal(year+"_present");
-    let l = getVal(year+"_leave");
-    let a = getVal(year+"_absent");
-
-    let block = document.getElementById(year);
-
-    if (p + l + a === s) {
-        block.classList.add("success");
-        block.classList.remove("error");
-    } else {
-        block.classList.add("error");
-        block.classList.remove("success");
-    }
-
-    checkForm();
-}
-
-function checkForm() {
-    let blocks = document.querySelectorAll(".year-block");
-    let valid = true;
-
-    blocks.forEach(b => {
-        if (b.classList.contains("error")) {
-            valid = false;
-        }
-    });
-
-    document.getElementById("saveBtn").disabled = !valid;
-}
-
 </script>
 
 </body>
