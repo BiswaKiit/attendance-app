@@ -1,26 +1,42 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, redirect
 import psycopg2
 import pandas as pd
 import os
 
+# PDF
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
 app = Flask(__name__)
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+# 🔗 DATABASE
+DATABASE_URL = os.getenv("DATABASE_URL") or "postgresql://attendance_user:hIEyKUeKKblpFAYtYXjcDp5GCXGQZcbl@dpg-d7b5hdjuibrs73b6m1d0-a.oregon-postgres.render.com/attendance_2cet"
 
 floors = ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor", "4th Floor"]
 years = ["1st Year", "2nd Year", "3rd Year", "4th Year"]
 
-
+# 🔌 SAFE DB CONNECTION
 def get_conn():
-    return psycopg2.connect(DATABASE_URL)
+    try:
+        return psycopg2.connect(DATABASE_URL)
+    except Exception as e:
+        print("DB ERROR:", e)
+        return None
 
+# 🔢 SAFE INT
+def to_int(val):
+    try:
+        return int(val)
+    except:
+        return 0
 
+# 🛠 CREATE TABLE
 def create_table():
     conn = get_conn()
+    if not conn:
+        return
     cur = conn.cursor()
+
     cur.execute("""
     CREATE TABLE IF NOT EXISTS attendance (
         id SERIAL PRIMARY KEY,
@@ -34,15 +50,11 @@ def create_table():
         absent INT
     )
     """)
+
     conn.commit()
     conn.close()
 
-
-def to_int(val):
-    return int(val) if val and str(val).strip() else 0
-
-
-# ================= HOME =================
+# 🚀 HOME
 @app.route("/", methods=["GET", "POST"])
 def index():
     create_table()
@@ -50,21 +62,29 @@ def index():
 
     if request.method == "POST":
         try:
-            floor = request.form.get("floor")
-            date = request.form.get("date")
-            hostel = "KING PALACE - 15"
+            floor = request.form.get("floor") or ""
+            date = request.form.get("date") or ""
+            hostel = request.form.get("hostel") or "KING PALACE - 15"
             floor_strength = to_int(request.form.get("floor_strength"))
 
+            if not floor or not date:
+                return render_template("index.html", floors=floors, years=years, message="❌ Select floor & date")
+
             conn = get_conn()
+            if not conn:
+                return render_template("index.html", floors=floors, years=years, message="❌ DB connection failed")
+
             cur = conn.cursor()
 
+            # ❌ DUPLICATE CHECK
             cur.execute("SELECT 1 FROM attendance WHERE date=%s AND floor=%s", (date, floor))
             if cur.fetchone():
-                message = f"❌ Already entered for {floor}"
                 conn.close()
-                return render_template("index.html", floors=floors, years=years, message=message)
+                return render_template("index.html", floors=floors, years=years,
+                                       message=f"❌ Data already punched for {floor}")
 
             total_year_strength = 0
+            valid = True
 
             for year in years:
                 strength = to_int(request.form.get(f"{year}_strength"))
@@ -73,12 +93,8 @@ def index():
                 absent = to_int(request.form.get(f"{year}_absent"))
 
                 # VALIDATION
-                if strength != (present + leave + absent):
-                    conn.close()
-                    return render_template("index.html",
-                        floors=floors, years=years,
-                        message=f"❌ Error in {year} calculation"
-                    )
+                if (present + leave + absent) != strength:
+                    valid = False
 
                 total_year_strength += strength
 
@@ -88,51 +104,50 @@ def index():
                 """, (date, hostel, floor, year, strength, present, leave, absent))
 
             if total_year_strength != floor_strength:
-                conn.rollback()
-                conn.close()
-                return render_template("index.html",
-                    floors=floors, years=years,
-                    message="❌ Floor strength mismatch"
-                )
+                valid = False
 
-            conn.commit()
+            if not valid:
+                conn.rollback()
+                message = "❌ Data mismatch! Check values."
+            else:
+                conn.commit()
+                message = "✅ Saved Successfully!"
+
             conn.close()
-            message = "✅ Saved Successfully!"
 
         except Exception as e:
-            message = str(e)
+            message = f"❌ Error: {str(e)}"
 
     return render_template("index.html", floors=floors, years=years, message=message)
 
-
-# ================= REPORT =================
+# 📊 REPORT (DATE BASED)
 @app.route("/report", methods=["POST"])
 def report():
     report_type = request.form.get("report_type")
     date = request.form.get("date")
-    month = request.form.get("month")
+
+    if not date:
+        return "❌ Please select date"
 
     conn = get_conn()
     cur = conn.cursor()
 
-    if date:
-        cur.execute("""
-        SELECT floor, year, strength, present, leave, absent
-        FROM attendance WHERE date=%s
-        """, (date,))
-    else:
-        cur.execute("""
-        SELECT floor, year, strength, present, leave, absent
-        FROM attendance WHERE TO_CHAR(date,'YYYY-MM')=%s
-        """, (month,))
+    cur.execute("""
+    SELECT floor,year,strength,present,leave,absent
+    FROM attendance
+    WHERE date=%s
+    """, (date,))
 
     rows = cur.fetchall()
     conn.close()
 
-    data = {}
-    year_summary = {y: {"Strength":0,"Present":0,"Leave":0} for y in years}
+    if not rows:
+        return "❌ No data found for this date"
 
+    data = {}
     total_strength = total_present = total_leave = 0
+
+    year_summary = {y: {"Strength":0, "Present":0, "Leave":0} for y in years}
 
     for floor, year, strength, present, leave, absent in rows:
 
@@ -155,58 +170,61 @@ def report():
         total_leave += (leave + absent)
 
     return render_template("report.html",
-        data=data,
-        report_type=report_type,
-        total_strength=total_strength,
-        total_present=total_present,
-        total_leave=total_leave,
-        year_summary=year_summary,
-        date=date,
-        month=month
-    )
+                           data=data,
+                           report_type=report_type,
+                           total_strength=total_strength,
+                           total_present=total_present,
+                           total_leave=total_leave,
+                           year_summary=year_summary,
+                           date=date)
 
-
-# ================= DOWNLOAD =================
-@app.route("/download")
-def download():
+# 📥 PDF DOWNLOAD
+@app.route("/download-pdf")
+def download_pdf():
     date = request.args.get("date")
-    format_type = request.args.get("type")
 
     conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("""
-    SELECT floor, year, strength, present, leave, absent
-    FROM attendance WHERE date=%s
+    SELECT floor,year,strength,present,leave,absent
+    FROM attendance
+    WHERE date=%s
     """, (date,))
+
     rows = cur.fetchall()
     conn.close()
 
-    # ===== PDF =====
-    if format_type == "pdf":
-        file_name = f"report_{date}.pdf"
-        doc = SimpleDocTemplate(file_name)
-        styles = getSampleStyleSheet()
-        content = []
+    file_path = "report.pdf"
 
-        content.append(Paragraph("KING PALACE - 15", styles['Title']))
-        content.append(Paragraph(f"Date: {date}", styles['Normal']))
-        content.append(Spacer(1, 10))
+    doc = SimpleDocTemplate(file_path)
+    styles = getSampleStyleSheet()
 
-        for r in rows:
-            floor, year, s, p, l, a = r
-            content.append(Paragraph(f"{floor} - {year} → S:{s} P:{p} L:{l} A:{a}", styles['Normal']))
-            content.append(Spacer(1, 5))
+    content = []
+    content.append(Paragraph("KING PALACE - 15", styles["Title"]))
+    content.append(Spacer(1, 10))
 
-        doc.build(content)
-        return send_file(file_name, as_attachment=True)
+    total_strength = total_present = total_leave = 0
 
-    # ===== EXCEL =====
-    df = pd.DataFrame(rows, columns=["Floor","Year","Strength","Present","Leave","Absent"])
-    file = "report.xlsx"
-    df.to_excel(file, index=False)
-    return send_file(file, as_attachment=True)
+    for floor, year, strength, present, leave, absent in rows:
+        content.append(Paragraph(
+            f"{floor} | {year} → S:{strength} P:{present} L:{leave} A:{absent}",
+            styles["Normal"]
+        ))
 
+        total_strength += strength
+        total_present += present
+        total_leave += (leave + absent)
 
+    content.append(Spacer(1, 10))
+    content.append(Paragraph(f"Total Strength: {total_strength}", styles["Normal"]))
+    content.append(Paragraph(f"Total Present: {total_present}", styles["Normal"]))
+    content.append(Paragraph(f"Total Leave: {total_leave}", styles["Normal"]))
+
+    doc.build(content)
+
+    return send_file(file_path, as_attachment=True)
+
+# ▶️ RUN
 if __name__ == "__main__":
     app.run(debug=True)
