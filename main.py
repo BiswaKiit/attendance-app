@@ -19,8 +19,9 @@ def get_conn():
 
 # 🔢 SAFE INT
 def to_int(val):
-    return int(val) if val and str(val).strip() else 0
-
+    if val is None or str(val).strip() == "":
+        return 0
+    return int(val)
 
 # 🛠 CREATE TABLE (AUTO)
 def create_table():

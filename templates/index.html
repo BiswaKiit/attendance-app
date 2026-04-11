@@ -1,174 +1,152 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Attendance Entry</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Attendance App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    font-family: Arial;
     margin: 0;
-    padding: 10px;
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
 }
 
 .container {
-    max-width: 900px;
+    max-width: 500px;
     margin: auto;
+    padding: 10px;
+}
+
+/* CARD */
+.card {
     background: white;
     padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
-h2 {
-    text-align: center;
-    color: #333;
-}
-
-/* FORM TOP */
-.form-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    border-radius: 15px;
     margin-bottom: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-.form-row input, .form-row select {
-    flex: 1;
-    padding: 10px;
-    border-radius: 6px;
+/* INPUT */
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin: 4px 0;
+    border-radius: 8px;
     border: 1px solid #ccc;
-    font-size: 14px;
 }
 
 /* TABLE */
 table {
     width: 100%;
     border-collapse: collapse;
-    text-align: center;
-}
-
-th {
-    background: #4facfe;
-    color: white;
-    padding: 8px;
 }
 
 td {
-    padding: 6px;
-}
-
-input[type="number"] {
-    width: 100%;
-    padding: 6px;
-    text-align: center;
+    padding: 5px;
 }
 
 /* BUTTON */
 button {
     width: 100%;
     padding: 12px;
-    margin-top: 15px;
     border: none;
-    background: #00c853;
+    border-radius: 10px;
+    background: #4facfe;
     color: white;
     font-size: 16px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #00a844;
-}
-
-/* MESSAGE */
-.msg {
-    text-align: center;
-    font-weight: bold;
     margin-top: 10px;
 }
 
-/* MOBILE */
-@media (max-width: 600px) {
-    table {
-        font-size: 12px;
-    }
+/* SUCCESS / ERROR */
+.success { color: green; }
+.error { color: red; }
+
+/* FOOTER */
+.footer {
+    text-align: center;
+    font-size: 14px;
+    color: white;
+    margin: 10px 0;
 }
 </style>
+
 </head>
 
 <body>
 
 <div class="container">
-<h2>📊 Attendance Entry</h2>
 
-<form method="POST">
+<!-- 📥 ATTENDANCE ENTRY -->
+<div class="card">
+    <h3>📥 Attendance Entry</h3>
 
-<!-- TOP SECTION -->
-<div class="form-row">
-    <input type="date" name="date" required>
+    <form method="POST">
 
-    <select name="floor" required>
-        <option value="">Select Floor</option>
-        {% for f in floors %}
-        <option value="{{f}}">{{f}}</option>
-        {% endfor %}
-    </select>
+        <input type="date" name="date" required>
 
-    <input type="text" name="hostel" placeholder="Hostel (Default KP-15)">
+        <select name="floor" required>
+            <option value="">Select Floor</option>
+            {% for f in floors %}
+            <option>{{ f }}</option>
+            {% endfor %}
+        </select>
 
-    <input type="number" name="floor_strength" placeholder="Floor Strength" required>
+        <input type="number" name="floor_strength" id="floor_strength" placeholder="Floor Strength" required>
+
+        <table border="1">
+            <tr>
+                <th>Year</th>
+                <th>Strength</th>
+                <th>Present</th>
+                <th>Leave</th>
+                <th>Absent</th>
+            </tr>
+
+            {% for y in years %}
+            <tr>
+                <td>{{ y }}</td>
+                <td><input type="number" name="{{y}}_strength" required></td>
+                <td><input type="number" name="{{y}}_present" required></td>
+                <td><input type="number" name="{{y}}_leave" required></td>
+                <td><input type="number" name="{{y}}_absent" required></td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <button type="submit">💾 Save</button>
+    </form>
+
+    {% if message %}
+        <p class="{{ 'success' if '✅' in message else 'error' }}">{{ message }}</p>
+    {% endif %}
 </div>
 
-<!-- TABLE -->
-<table border="1">
-<tr>
-    <th>Year</th>
-    <th>Strength</th>
-    <th>Present</th>
-    <th>Leave</th>
-    <th>Absent</th>
-</tr>
 
-{% for y in years %}
-<tr>
-    <td><b>{{y}}</b></td>
+<!-- 📊 REPORT GENERATION -->
+<div class="card">
+    <h3>📊 Generate Report</h3>
 
-    <td><input type="number" name="{{y}}_strength" oninput="calc('{{y}}')"></td>
-    <td><input type="number" name="{{y}}_present" oninput="calc('{{y}}')"></td>
-    <td><input type="number" name="{{y}}_leave" oninput="calc('{{y}}')"></td>
-    <td><input type="number" name="{{y}}_absent" readonly></td>
-</tr>
-{% endfor %}
+    <form method="POST" action="/report">
 
-</table>
+        <select name="report_type" required>
+            <option value="">Select Report Type</option>
+            <option value="summary">Summary</option>
+            <option value="partly">Year Wise</option>
+            <option value="full">Full Report</option>
+        </select>
 
-<button type="submit">💾 Save Data</button>
+        <input type="month" name="month" required>
 
-</form>
-
-{% if message %}
-<div class="msg">{{message}}</div>
-{% endif %}
+        <button type="submit">📊 Generate</button>
+    </form>
+</div>
 
 </div>
 
-<!-- SMART CALC SCRIPT -->
-<script>
-function calc(year) {
-    let s = parseInt(document.getElementsByName(year+"_strength")[0].value) || 0;
-    let p = parseInt(document.getElementsByName(year+"_present")[0].value) || 0;
-    let l = parseInt(document.getElementsByName(year+"_leave")[0].value) || 0;
-
-    let absent = s - (p + l);
-    if(absent < 0) absent = 0;
-
-    document.getElementsByName(year+"_absent")[0].value = absent;
-}
-</script>
+<!-- 👇 FOOTER -->
+<div class="footer">
+    Created by Biswa Ranjan Mishra 🚀
+</div>
 
 </body>
 </html>
