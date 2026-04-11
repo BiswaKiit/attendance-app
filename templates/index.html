@@ -17,16 +17,20 @@ body {
     padding: 10px;
 }
 
-/* CARD */
+.title {
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
 .card {
     background: white;
     padding: 15px;
     border-radius: 15px;
     margin-bottom: 15px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-/* INPUT */
 input, select {
     width: 100%;
     padding: 8px;
@@ -35,38 +39,48 @@ input, select {
     border: 1px solid #ccc;
 }
 
-/* TABLE */
+.row {
+    display: flex;
+    gap: 5px;
+}
+
+.row input, .row select {
+    flex: 1;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
 }
 
-td {
-    padding: 5px;
+th {
+    background: #4facfe;
+    color: white;
 }
 
-/* BUTTON */
+td, th {
+    padding: 6px;
+    text-align: center;
+}
+
 button {
     width: 100%;
     padding: 12px;
     border: none;
     border-radius: 10px;
-    background: #4facfe;
+    background: #00c853;
     color: white;
     font-size: 16px;
     margin-top: 10px;
 }
 
-/* SUCCESS / ERROR */
 .success { color: green; }
 .error { color: red; }
 
-/* FOOTER */
 .footer {
     text-align: center;
-    font-size: 14px;
     color: white;
-    margin: 10px 0;
+    margin: 10px;
 }
 </style>
 
@@ -76,77 +90,94 @@ button {
 
 <div class="container">
 
-<!-- 📥 ATTENDANCE ENTRY -->
+<div class="title">🏨 KING PALACE - 15</div>
+
+<!-- 📥 ENTRY -->
 <div class="card">
-    <h3>📥 Attendance Entry</h3>
+<h3>📥 Attendance Entry</h3>
 
-    <form method="POST">
+<form method="POST">
 
-        <input type="date" name="date" required>
+<input type="date" name="date" required>
 
-        <select name="floor" required>
-            <option value="">Select Floor</option>
-            {% for f in floors %}
-            <option>{{ f }}</option>
-            {% endfor %}
-        </select>
+<select name="floor" required>
+<option value="">Select Floor</option>
+{% for f in floors %}
+<option value="{{f}}">{{f}}</option>
+{% endfor %}
+</select>
 
-        <input type="number" name="floor_strength" id="floor_strength" placeholder="Floor Strength" required>
+<div class="row">
+<input type="number" name="floor_strength" placeholder="Floor Strength" required>
 
-        <table border="1">
-            <tr>
-                <th>Year</th>
-                <th>Strength</th>
-                <th>Present</th>
-                <th>Leave</th>
-                <th>Absent</th>
-            </tr>
+<select name="attendant" required>
+<option value="">Attendant</option>
+<option>Sunam</option>
+<option>Rabi Narayan</option>
+<option>Nrushingha</option>
+<option>Satya</option>
+<option>Alok</option>
+<option>Sarat</option>
+<option>Subasish</option>
+</select>
+</div>
 
-            {% for y in years %}
-            <tr>
-                <td>{{ y }}</td>
-                <td><input type="number" name="{{y}}_strength" required></td>
-                <td><input type="number" name="{{y}}_present" required></td>
-                <td><input type="number" name="{{y}}_leave" required></td>
-                <td><input type="number" name="{{y}}_absent" required></td>
-            </tr>
-            {% endfor %}
-        </table>
+<table border="1">
+<tr>
+<th>Year</th>
+<th>Str</th>
+<th>Pre</th>
+<th>Leave</th>
+<th>Abs</th>
+</tr>
 
-        <button type="submit">💾 Save</button>
-    </form>
+{% for y in years %}
+<tr>
+<td>{{y}}</td>
+<td><input name="{{y}}_strength" required></td>
+<td><input name="{{y}}_present" required></td>
+<td><input name="{{y}}_leave" required></td>
+<td><input name="{{y}}_absent" required></td>
+</tr>
+{% endfor %}
 
-    {% if message %}
-        <p class="{{ 'success' if '✅' in message else 'error' }}">{{ message }}</p>
-    {% endif %}
+</table>
+
+<button type="submit">💾 Save Data</button>
+
+</form>
+
+{% if message %}
+<p class="{{ 'success' if '✅' in message else 'error' }}">{{message}}</p>
+{% endif %}
+
 </div>
 
 
-<!-- 📊 REPORT GENERATION -->
+<!-- 📊 REPORT -->
 <div class="card">
-    <h3>📊 Generate Report</h3>
+<h3>📊 Generate Report</h3>
 
-    <form method="POST" action="/report">
+<form method="POST" action="/report">
 
-        <select name="report_type" required>
-            <option value="">Select Report Type</option>
-            <option value="summary">Summary</option>
-            <option value="partly">Year Wise</option>
-            <option value="full">Full Report</option>
-        </select>
+<select name="report_type" required>
+<option value="">Select Type</option>
+<option value="summary">Summary</option>
+<option value="partly">Part Report</option>
+<option value="full">Full Report</option>
+</select>
 
-        <input type="month" name="month" required>
+<input type="date" name="date" required>
 
-        <button type="submit">📊 Generate</button>
-    </form>
+<button type="submit">📊 Generate</button>
+
+</form>
+
 </div>
 
 </div>
 
-<!-- 👇 FOOTER -->
-<div class="footer">
-    Created by Biswa Ranjan Mishra 🚀
-</div>
+<div class="footer">Created by Biswa 🚀</div>
 
 </body>
 </html>

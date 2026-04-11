@@ -5,7 +5,7 @@ import os
 
 app = Flask(__name__)
 
-# 🔗 DATABASE (Render PostgreSQL)
+# 🔗 DATABASE
 DATABASE_URL = os.getenv("DATABASE_URL") or "postgresql://attendance_user:hIEyKUeKKblpFAYtYXjcDp5GCXGQZcbl@dpg-d7b5hdjuibrs73b6m1d0-a.oregon-postgres.render.com/attendance_2cet"
 
 floors = ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor", "4th Floor"]
@@ -17,13 +17,15 @@ def get_conn():
     return psycopg2.connect(DATABASE_URL)
 
 
-# 🔢 SAFE INT
+# 🔢 SAFE INT (blank = 0)
 def to_int(val):
-    if val is None or str(val).strip() == "":
+    try:
+        return int(val)
+    except:
         return 0
-    return int(val)
 
-# 🛠 CREATE TABLE (AUTO)
+
+# 🛠 CREATE TABLE
 def create_table():
     conn = get_conn()
     cur = conn.cursor()
@@ -38,7 +40,8 @@ def create_table():
         strength INT,
         present INT,
         leave INT,
-        absent INT
+        absent INT,
+        attendant TEXT
     )
     """)
 
@@ -49,7 +52,7 @@ def create_table():
 # 🚀 HOME
 @app.route("/", methods=["GET", "POST"])
 def index():
-    create_table()  # ensure table exists
+    create_table()
     message = ""
 
     if request.method == "POST":
@@ -58,6 +61,7 @@ def index():
             date = request.form.get("date")
             hostel = request.form.get("hostel") or "KP-15"
             floor_strength = to_int(request.form.get("floor_strength"))
+            attendant = request.form.get("attendant")
 
             conn = get_conn()
             cur = conn.cursor()
@@ -65,7 +69,7 @@ def index():
             # ❌ DUPLICATE CHECK
             cur.execute("SELECT 1 FROM attendance WHERE date=%s AND floor=%s", (date, floor))
             if cur.fetchone():
-                message = f"❌ Data already punched for {floor} on {date}"
+                message = f"❌ Data already exists for {floor} on {date}"
                 conn.close()
                 return render_template("index.html", floors=floors, years=years, message=message)
 
@@ -78,29 +82,30 @@ def index():
                 leave = to_int(request.form.get(f"{year}_leave"))
                 absent = to_int(request.form.get(f"{year}_absent"))
 
-                # ✅ Validation
+                # ✅ Year validation
                 if (present + leave + absent) != strength:
                     valid = False
 
                 total_year_strength += strength
 
                 cur.execute("""
-                INSERT INTO attendance (date, hostel, floor, year, strength, present, leave, absent)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-                """, (date, hostel, floor, year, strength, present, leave, absent))
+                INSERT INTO attendance (date, hostel, floor, year, strength, present, leave, absent, attendant)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                """, (date, hostel, floor, year, strength, present, leave, absent, attendant))
 
-            # ✅ Floor total validation
+            # ✅ Floor validation
             if total_year_strength != floor_strength:
                 valid = False
 
             if not valid:
                 conn.rollback()
-                message = "❌ Data mismatch! Please check values."
-            else:
-                conn.commit()
-                message = "✅ Saved Successfully!"
+                message = "❌ ERROR: Strength mismatch! Data NOT saved."
+                conn.close()
+                return render_template("index.html", floors=floors, years=years, message=message)
 
+            conn.commit()
             conn.close()
+            message = "✅ Data Saved Successfully!"
 
         except Exception as e:
             message = f"Error: {str(e)}"
@@ -108,20 +113,20 @@ def index():
     return render_template("index.html", floors=floors, years=years, message=message)
 
 
-# 📊 REPORT (MONTH FILTER)
+# 📊 REPORT (DATE BASED)
 @app.route("/report", methods=["POST"])
 def report():
     report_type = request.form.get("report_type")
-    month = request.form.get("month")  # YYYY-MM
+    date = request.form.get("date")
 
     conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("""
-    SELECT date,floor,year,strength,present,leave,absent
+    SELECT floor,year,strength,present,leave,absent
     FROM attendance
-    WHERE TO_CHAR(date, 'YYYY-MM') = %s
-    """, (month,))
+    WHERE date = %s
+    """, (date,))
 
     rows = cur.fetchall()
     conn.close()
@@ -129,9 +134,9 @@ def report():
     data = {}
     total_strength = total_present = total_leave = 0
 
-    year_summary = {y: {"Strength":0, "Present":0, "Leave":0} for y in years}
+    year_summary = {y: {"Strength": 0, "Present": 0, "Leave": 0} for y in years}
 
-    for date, floor, year, strength, present, leave, absent in rows:
+    for floor, year, strength, present, leave, absent in rows:
 
         if floor not in data:
             data[floor] = {}
@@ -158,28 +163,28 @@ def report():
                            total_present=total_present,
                            total_leave=total_leave,
                            year_summary=year_summary,
-                           month=month)
+                           date=date)
 
 
-# 📥 EXCEL DOWNLOAD (MONTH FILTER)
+# 📥 DOWNLOAD (DATE BASED)
 @app.route("/download")
 def download():
-    month = request.args.get("month")
+    date = request.args.get("date")
 
     conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("""
         SELECT * FROM attendance
-        WHERE TO_CHAR(date, 'YYYY-MM') = %s
-    """, (month,))
+        WHERE date = %s
+    """, (date,))
 
     rows = cur.fetchall()
     conn.close()
 
     df = pd.DataFrame(rows, columns=[
-        "ID","Date","Hostel","Floor","Year",
-        "Strength","Present","Leave","Absent"
+        "ID", "Date", "Hostel", "Floor", "Year",
+        "Strength", "Present", "Leave", "Absent", "Attendant"
     ])
 
     file = "attendance.xlsx"
