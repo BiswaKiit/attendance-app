@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Report</title>
+    <title>Attendance Report</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
@@ -10,54 +10,98 @@
 
 <div class="container">
 
-    <h2>Attendance Report</h2>
+    <!-- 🔵 HEADER -->
+    <h2 class="title">📊 KING PALACE - 15</h2>
+    <p class="subtitle">Attendance Report ({{ date }})</p>
 
-    <!-- SUMMARY -->
+    <!-- ❌ NO DATA MESSAGE -->
+    {% if total_strength == 0 %}
+        <div class="error-box">
+            ⚠️ No data found for selected date
+        </div>
+    {% endif %}
+
+    <!-- 🔹 SUMMARY REPORT -->
     {% if report_type == "summary" %}
-        <p>Total Present: {{ total_present }}</p>
-        <p>Total Absent: {{ total_absent }}</p>
-        <p>Total Vacant: {{ total_vacant }}</p>
+        <div class="card">
+            <h3>📌 Summary Report</h3>
+
+            <div class="summary-grid">
+                <div class="summary-box">👥 Strength<br><b>{{ total_strength }}</b></div>
+                <div class="summary-box">✅ Present<br><b>{{ total_present }}</b></div>
+                <div class="summary-box">📤 Leave<br><b>{{ total_leave }}</b></div>
+            </div>
+        </div>
     {% endif %}
 
-    <!-- PARTLY -->
-    {% if report_type == "part" %}
-        {% for row in data %}
-            <p>
-                {{ row.Date }} → 
-                Present: {{ row.Present }}, 
-                Absent: {{ row.Absent }}, 
-                Vacant: {{ row.Vacant }}
-            </p>
-        {% endfor %}
+    <!-- 🔹 PARTLY REPORT -->
+    {% if report_type == "partly" %}
+        <div class="card">
+            <h3>📊 Year-wise Report</h3>
+
+            <table>
+                <tr>
+                    <th>Year</th>
+                    <th>Strength</th>
+                    <th>Present</th>
+                    <th>Leave</th>
+                </tr>
+
+                {% for year, val in year_summary.items() %}
+                <tr>
+                    <td>{{ year }}</td>
+                    <td>{{ val.Strength }}</td>
+                    <td>{{ val.Present }}</td>
+                    <td>{{ val.Leave }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
     {% endif %}
 
-    <!-- FULL -->
+    <!-- 🔹 FULL REPORT -->
     {% if report_type == "full" %}
-        <table width="100%" border="1" cellspacing="0" cellpadding="8">
-            <tr>
-                <th>Date</th>
-                <th>Present</th>
-                <th>Absent</th>
-                <th>Vacant</th>
-            </tr>
+        <div class="card">
+            <h3>🏢 Floor-wise Full Report</h3>
 
-            {% for row in data %}
-            <tr>
-                <td>{{ row.Date }}</td>
-                <td>{{ row.Present }}</td>
-                <td>{{ row.Absent }}</td>
-                <td>{{ row.Vacant }}</td>
-            </tr>
+            {% for floor, years in data.items() %}
+                <h4 class="floor-title">{{ floor }}</h4>
+
+                <table>
+                    <tr>
+                        <th>Year</th>
+                        <th>Strength</th>
+                        <th>Present</th>
+                        <th>Leave</th>
+                        <th>Absent</th>
+                    </tr>
+
+                    {% for year, val in years.items() %}
+                    <tr>
+                        <td>{{ year }}</td>
+                        <td>{{ val.Strength }}</td>
+                        <td>{{ val.Present }}</td>
+                        <td>{{ val.Leave }}</td>
+                        <td>{{ val.Absent }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
             {% endfor %}
-        </table>
+        </div>
     {% endif %}
 
-    <hr>
+    <!-- 🔘 ACTION BUTTONS -->
+    <div class="btn-group">
+        <a href="/download?date={{ date }}">
+            <button class="btn download">⬇ Download</button>
+        </a>
 
-    <!-- BUTTONS -->
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <a href="/download"><button class="btn">Download Excel</button></a>
-        <button class="btn" onclick="shareReport()">Share</button>
+        <button class="btn share" onclick="shareReport()">📤 Share</button>
+    </div>
+
+    <!-- 👤 FOOTER -->
+    <div class="footer">
+        Created by ❤️ Biswa Ranjan Mishra
     </div>
 
 </div>
@@ -67,11 +111,11 @@ function shareReport() {
     if (navigator.share) {
         navigator.share({
             title: "Attendance Report",
-            text: "Attendance Report",
+            text: "Attendance Report - KING PALACE 15",
             url: window.location.href
         });
     } else {
-        alert("Sharing not supported");
+        alert("Sharing not supported in this browser");
     }
 }
 </script>

@@ -183,11 +183,11 @@ def download():
     conn.close()
 
     df = pd.DataFrame(rows, columns=[
-        "ID", "Date", "Hostel", "Floor", "Year",
-        "Strength", "Present", "Leave", "Absent", "Attendant"
+        "ID","Date","Hostel","Floor","Year",
+        "Strength","Present","Leave","Absent"
     ])
 
-    file = "attendance.xlsx"
+    file = f"attendance_{date}.xlsx"
     df.to_excel(file, index=False)
 
     return send_file(file, as_attachment=True)
