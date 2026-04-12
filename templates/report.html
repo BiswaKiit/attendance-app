@@ -8,50 +8,37 @@
 body {
     font-family: Arial;
     margin: 0;
-    background: #f5f5f5;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
 }
 
 .container {
     max-width: 600px;
     margin: auto;
-    padding: 10px;
+    padding: 15px;
 }
 
 .card {
     background: white;
+    color: black;
     padding: 15px;
-    border-radius: 12px;
-    margin-bottom: 10px;
+    border-radius: 15px;
+    margin-bottom: 15px;
 }
 
 h2, h3 {
     text-align: center;
 }
 
-.floor {
-    background: #4facfe;
-    color: white;
-    padding: 8px;
-    border-radius: 8px;
-    margin-top: 10px;
-}
-
-.total {
-    background: #00c853;
-    color: white;
-    padding: 10px;
-    border-radius: 10px;
-    margin-top: 15px;
-}
-
 button {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     margin-top: 8px;
     border: none;
-    border-radius: 8px;
-    background: #4facfe;
+    border-radius: 10px;
+    background: #00c853;
     color: white;
+    font-size: 16px;
 }
 </style>
 </head>
@@ -61,140 +48,109 @@ button {
 <div class="container">
 
 <h2>🏠 KING PALACE - 15</h2>
-
-{% if date %}
 <h3>📅 {{ date }}</h3>
-{% elif month %}
-<h3>📅 {{ month }}</h3>
-{% endif %}
 
 <!-- ✅ SUMMARY -->
 {% if report_type == "summary" %}
-
 <div class="card">
-<h3>Summary</h3>
-
-<p><b>Total Strength:</b> {{ grand.strength }}</p>
-<p><b>Total Present:</b> {{ grand.present }}</p>
-<p><b>Total Leave:</b> {{ grand.leave }}</p>
-<p><b>Total Absent:</b> {{ grand.absent }}</p>
-
+<h3>Summary Report</h3>
+<p>Total Strength: {{ grand.S }}</p>
+<p>Total Present: {{ grand.P }}</p>
+<p>Total Leave: {{ total_leave }}</p>
 </div>
-
 {% endif %}
 
 <!-- ✅ PART REPORT -->
 {% if report_type == "partly" %}
-
-{% for floor, years in data.items() %}
 <div class="card">
+<h3>Part Report (Floor Wise)</h3>
 
-<div class="floor">
-{{ floor }} (👤 {{ attendants[floor] or "N/A" }})
-</div>
-
-{% set fs = 0 %}
-{% set fp = 0 %}
-{% set fl = 0 %}
-{% set fa = 0 %}
-
-{% for year, val in years.items() %}
+{% for floor, val in floor_totals.items() %}
 <p>
-{{ year }} → S: {{ val.Strength }} |
-P: {{ val.Present }} |
-L: {{ val.Leave }} |
-A: {{ val.Absent }}
+<b>{{ floor }}</b> → 
+S: {{ val.S }} | 
+P: {{ val.P }} | 
+L: {{ val.L + val.A }}
 </p>
-
-{% set fs = fs + val.Strength %}
-{% set fp = fp + val.Present %}
-{% set fl = fl + val.Leave %}
-{% set fa = fa + val.Absent %}
-
 {% endfor %}
 
 <hr>
-
-<p><b>Floor Total → S: {{ fs }} | P: {{ fp }} | L: {{ fl }} | A: {{ fa }}</b></p>
+<b>Grand Total</b><br>
+S: {{ grand.S }} | 
+P: {{ grand.P }} | 
+L: {{ total_leave }}
 
 </div>
-{% endfor %}
-
 {% endif %}
 
 <!-- ✅ FULL REPORT -->
 {% if report_type == "full" %}
+<div class="card">
+<h3>Full Report</h3>
 
 {% for floor, years in data.items() %}
-<div class="card">
+<hr>
+<b>{{ floor }} ({{ floor_totals[floor].attendant }})</b>
 
-<div class="floor">
-{{ floor }} (👤 {{ attendants[floor] or "N/A" }})
-</div>
+{% for year, v in years.items() %}
+<p>
+{{ year }} → 
+S: {{ v.S }} | 
+P: {{ v.P }} | 
+L: {{ v.L }} | 
+A: {{ v.A }}
+</p>
+{% endfor %}
 
-<table border="1" width="100%">
-<tr>
-<th>Year</th>
-<th>S</th>
-<th>P</th>
-<th>L</th>
-<th>A</th>
-</tr>
-
-{% set fs = 0 %}
-{% set fp = 0 %}
-{% set fl = 0 %}
-{% set fa = 0 %}
-
-{% for year, val in years.items() %}
-<tr>
-<td>{{ year }}</td>
-<td>{{ val.Strength }}</td>
-<td>{{ val.Present }}</td>
-<td>{{ val.Leave }}</td>
-<td>{{ val.Absent }}</td>
-</tr>
-
-{% set fs = fs + val.Strength %}
-{% set fp = fp + val.Present %}
-{% set fl = fl + val.Leave %}
-{% set fa = fa + val.Absent %}
+<p><b>Floor Total → 
+S: {{ floor_totals[floor].S }} | 
+P: {{ floor_totals[floor].P }} | 
+L: {{ floor_totals[floor].L }} | 
+A: {{ floor_totals[floor].A }}
+</b></p>
 
 {% endfor %}
 
-<tr>
-<th>Total</th>
-<th>{{ fs }}</th>
-<th>{{ fp }}</th>
-<th>{{ fl }}</th>
-<th>{{ fa }}</th>
-</tr>
-
-</table>
+<hr>
+<h3>Grand Total</h3>
+<p>
+S: {{ grand.S }} | 
+P: {{ grand.P }} | 
+L: {{ grand.L }} | 
+A: {{ grand.A }}
+</p>
 
 </div>
-{% endfor %}
-
 {% endif %}
 
-<!-- ✅ GRAND TOTAL -->
-<div class="total">
-<b>GRAND TOTAL → 
-S: {{ grand.strength }} |
-P: {{ grand.present }} |
-L: {{ grand.leave }} |
-A: {{ grand.absent }}
-</b>
-</div>
+<!-- ✅ BUTTONS -->
+<button onclick="shareReport()">📤 Share</button>
 
-<!-- ACTIONS -->
-<button onclick="window.print()">🖨️ Print</button>
-
-<a href="/download?date={{ date }}">
+<a href="/download-pdf?date={{ date }}">
 <button>📄 Download PDF</button>
 </a>
 
+<button onclick="window.print()">🖨️ Print</button>
+
 </div>
+
+<script>
+function shareReport() {
+
+let text = "🏠 KING PALACE - 15\n";
+text += "📅 {{ date }}\n\n";
+
+text += "Total Strength: {{ grand.S }}\n";
+text += "Total Present: {{ grand.P }}\n";
+text += "Total Leave: {{ total_leave }}\n";
+
+if (navigator.share) {
+    navigator.share({title:"Report", text:text});
+} else {
+    alert(text);
+}
+}
+</script>
 
 </body>
 </html>
