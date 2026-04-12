@@ -28,8 +28,12 @@ def to_int(val):
 
 # 🛠 CREATE TABLE
 def create_table():
-    conn = get_conn()
-    cur = conn.cursor()
+conn = get_conn()
+cur = conn.cursor()
+
+# 🔥 TEMP DELETE OLD BAD DATA (RUN ONLY ONCE)
+cur.execute("DELETE FROM attendance WHERE date = '2026-04-06'")
+conn.commit()
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS attendance (
