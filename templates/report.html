@@ -1,90 +1,115 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Report</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body { font-family: Arial; padding:15px; background:#f2f6ff; }
+.card { background:white; padding:15px; border-radius:10px; margin-bottom:15px; box-shadow:0 2px 10px rgba(0,0,0,0.1); }
+h2 { text-align:center; color:#2c3e50; }
+.total { font-weight:bold; color:green; margin-top:10px; }
+.floor { color:#007bff; }
+.footer { text-align:center; margin-top:20px; font-size:12px; color:#666; }
+button { padding:10px; border:none; border-radius:8px; background:#007bff; color:white; width:100%; margin-top:10px; }
+</style>
+
 </head>
 
 <body>
 
-<div class="container">
-
-<h2>🏠 KING PALACE - 15</h2>
-
-<h3>📊 Attendance Report</h3>
-
-{% if date %}
-<p>📅 Date: {{ date }}</p>
-{% else %}
-<p>📅 Month: {{ month }}</p>
-{% endif %}
-
-<hr>
+<h2>🏨 KING PALACE - 15</h2>
+<h3 style="text-align:center;">📅 {{ date }}</h3>
 
 <!-- SUMMARY -->
 {% if report_type == "summary" %}
-<h3>Summary</h3>
-<p>Total Strength: {{ total_strength }}</p>
-<p>Total Present: {{ total_present }}</p>
-<p>Total Leave: {{ total_leave }}</p>
+<div class="card">
+    <p><b>Total Strength:</b> {{ total_strength }}</p>
+    <p><b>Total Present:</b> {{ total_present }}</p>
+    <p><b>Total Leave:</b> {{ total_leave }}</p>
+</div>
 {% endif %}
 
-<!-- PART -->
+<!-- PART REPORT -->
 {% if report_type == "partly" %}
-<h3>Year-wise</h3>
-{% for year, val in year_summary.items() %}
-<p>{{ year }} → S: {{ val.Strength }} | P: {{ val.Present }} | L: {{ val.Leave }}</p>
-{% endfor %}
+<div class="card">
+    {% for year, val in year_summary.items() %}
+        <p>{{ year }} → Strength: {{ val.Strength }}, Present: {{ val.Present }}, Leave: {{ val.Leave }}</p>
+    {% endfor %}
+</div>
 {% endif %}
 
-<!-- FULL -->
+<!-- FULL REPORT -->
 {% if report_type == "full" %}
-<h3>Full Report</h3>
+{% set g_strength = 0 %}
+{% set g_present = 0 %}
+{% set g_leave = 0 %}
+{% set g_absent = 0 %}
+
 {% for floor, years in data.items() %}
-<h4>{{ floor }}</h4>
-{% for year, val in years.items() %}
-<p>{{ year }} → S:{{ val.Strength }} P:{{ val.Present }} L:{{ val.Leave }} A:{{ val.Absent }}</p>
-{% endfor %}
-{% endfor %}
-{% endif %}
+<div class="card">
+    <h3 class="floor">{{ floor }}</h3>
 
-<hr>
+    {% set f_strength = 0 %}
+    {% set f_present = 0 %}
+    {% set f_leave = 0 %}
+    {% set f_absent = 0 %}
 
-<!-- BUTTONS -->
-<button onclick="shareReport()">📤 Share</button>
+    {% for year, val in years.items() %}
+        <p>{{ year }} → S: {{ val.Strength }}, P: {{ val.Present }}, L: {{ val.Leave }}, A: {{ val.Absent }}</p>
 
-<a href="/download?date={{ date }}&type=pdf">
-<button>📄 PDF</button>
-</a>
+        {% set f_strength = f_strength + val.Strength %}
+        {% set f_present = f_present + val.Present %}
+        {% set f_leave = f_leave + val.Leave %}
+        {% set f_absent = f_absent + val.Absent %}
+    {% endfor %}
 
-<a href="/download?date={{ date }}&type=excel">
-<button>📊 Excel</button>
-</a>
+    <div class="total">
+        Floor Total → S: {{ f_strength }}, P: {{ f_present }}, L: {{ f_leave }}, A: {{ f_absent }}
+    </div>
 
-<button onclick="window.print()">🖨️ Print</button>
+    <p><b>Attendant:</b> {{ years.values()|list|first.attendant if years else "" }}</p>
 
 </div>
 
-<footer style="text-align:center;margin-top:20px;">
-Made by Biswa Ranjan Mishra 🚀
-</footer>
+{% set g_strength = g_strength + f_strength %}
+{% set g_present = g_present + f_present %}
+{% set g_leave = g_leave + f_leave %}
+{% set g_absent = g_absent + f_absent %}
+
+{% endfor %}
+
+<div class="card total">
+    <h3>Grand Total</h3>
+    <p>S: {{ g_strength }} | P: {{ g_present }} | L: {{ g_leave }} | A: {{ g_absent }}</p>
+</div>
+
+{% endif %}
+
+<!-- BUTTONS -->
+<div class="card">
+    <button onclick="shareReport()">📤 Share</button>
+    <a href="/download-pdf?date={{ date }}"><button>📥 Download PDF</button></a>
+</div>
+
+<div class="footer">
+Created by Biswa Ranjan Mishra
+</div>
 
 <script>
 function shareReport() {
+    let text = `🏨 KING PALACE - 15
+📅 Date: {{ date }}
 
-let text = "🏠 KING PALACE - 15\n";
-text += "Date: {{ date }}\n\n";
+Total Strength: {{ total_strength }}
+Total Present: {{ total_present }}
+Total Leave: {{ total_leave }}`;
 
-text += "Total Strength: {{ total_strength }}\n";
-text += "Total Present: {{ total_present }}\n";
-text += "Total Leave: {{ total_leave }}\n";
-
-if (navigator.share) {
-navigator.share({title:"Report", text:text});
-} else {
-alert(text);
-}
+    if (navigator.share) {
+        navigator.share({ text: text });
+    } else {
+        alert(text);
+    }
 }
 </script>
 

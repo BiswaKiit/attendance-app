@@ -2,182 +2,119 @@
 <html>
 <head>
     <title>Attendance App</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-body {
-    font-family: Arial;
-    margin: 0;
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
-}
-
-.container {
-    max-width: 500px;
-    margin: auto;
-    padding: 10px;
-}
-
-.title {
-    text-align: center;
-    color: white;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.card {
-    background: white;
-    padding: 15px;
-    border-radius: 15px;
-    margin-bottom: 15px;
-}
-
-input, select {
-    width: 100%;
-    padding: 8px;
-    margin: 4px 0;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-}
-
-.row {
-    display: flex;
-    gap: 5px;
-}
-
-.row input, .row select {
-    flex: 1;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-th {
-    background: #4facfe;
-    color: white;
-}
-
-td, th {
-    padding: 6px;
-    text-align: center;
-}
-
-button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 10px;
-    background: #00c853;
-    color: white;
-    font-size: 16px;
-    margin-top: 10px;
-}
-
-.success { color: green; }
-.error { color: red; }
-
-.footer {
-    text-align: center;
-    color: white;
-    margin: 10px;
-}
-</style>
-
+    <!-- ✅ PWA Support -->
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/favicon.png">
 </head>
 
 <body>
 
 <div class="container">
 
-<div class="title">🏨 KING PALACE - 15</div>
+    <h1>KING PALACE - 15</h1>
 
-<!-- 📥 ENTRY -->
-<div class="card">
-<h3>📥 Attendance Entry</h3>
+    <!-- ================= ATTENDANCE ENTRY CARD ================= -->
+    <div class="card">
 
-<form method="POST">
+        <h2>Attendance Entry</h2>
 
-<input type="date" name="date" required>
+        <form method="POST" action="/save" onsubmit="return validateForm()">
 
-<select name="floor" required>
-<option value="">Select Floor</option>
-{% for f in floors %}
-<option value="{{f}}">{{f}}</option>
-{% endfor %}
-</select>
+            <label>Date:</label>
+            <input type="date" name="date" required>
 
-<div class="row">
-<input type="number" name="floor_strength" placeholder="Floor Strength" required>
+            <hr>
 
-<select name="attendant" required>
-<option value="">Attendant</option>
-<option>Sunam</option>
-<option>Rabi Narayan</option>
-<option>Nrushingha</option>
-<option>Satya</option>
-<option>Alok</option>
-<option>Sarat</option>
-<option>Subasish</option>
-</select>
-</div>
+            {% set floors = ["Ground", "1st", "2nd", "3rd"] %}
+            {% set years = ["1st Year", "2nd Year", "3rd Year", "4th Year"] %}
 
-<table border="1">
-<tr>
-<th>Year</th>
-<th>Str</th>
-<th>Pre</th>
-<th>Leave</th>
-<th>Abs</th>
-</tr>
+            {% for floor in floors %}
+                <div class="floor-box">
 
-{% for y in years %}
-<tr>
-<td>{{y}}</td>
-<td><input name="{{y}}_strength" required></td>
-<td><input name="{{y}}_present" required></td>
-<td><input name="{{y}}_leave" required></td>
-<td><input name="{{y}}_absent" required></td>
-</tr>
-{% endfor %}
+                    <h3>{{ floor }} Floor</h3>
 
-</table>
+                    <!-- Floor Strength + Attendant -->
+                    <div class="row">
+                        <input type="number" name="{{ floor }}_strength" placeholder="Floor Strength" required>
 
-<button type="submit">💾 Save Data</button>
+                        <select name="{{ floor }}_attendant" required>
+                            <option value="">Select Attendant</option>
+                            {% for a in attendants %}
+                                <option value="{{ a }}">{{ a }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-</form>
+                    <!-- Year-wise Inputs -->
+                    {% for year in years %}
+                        <div class="row">
+                            <label>{{ year }}</label>
 
-{% if message %}
-<p class="{{ 'success' if '✅' in message else 'error' }}">{{message}}</p>
-{% endif %}
+                            <input type="number" name="{{ floor }}_{{ year }}_strength" placeholder="Strength" required>
+                            <input type="number" name="{{ floor }}_{{ year }}_present" placeholder="Present" required>
+                            <input type="number" name="{{ floor }}_{{ year }}_leave" placeholder="Leave" required>
+                            <input type="number" name="{{ floor }}_{{ year }}_absent" placeholder="Absent" required>
+                        </div>
+                    {% endfor %}
 
-</div>
+                </div>
+                <hr>
+            {% endfor %}
 
+            <button type="submit">Save Attendance</button>
 
-<!-- 📊 REPORT -->
-<div class="card">
-<h3>📊 Generate Report</h3>
+        </form>
+    </div>
 
-<form method="POST" action="/report">
+    <!-- ================= REPORT CARD ================= -->
+    <div class="card">
 
-<select name="report_type" required>
-<option value="">Select Type</option>
-<option value="summary">Summary</option>
-<option value="partly">Part Report</option>
-<option value="full">Full Report</option>
-</select>
+        <h2>Generate Report</h2>
 
-<input type="date" name="date" required>
+        <form method="POST" action="/report">
 
-<button type="submit">📊 Generate</button>
+            <label>Select Date:</label>
+            <input type="date" name="date" required>
 
-</form>
+            <label>Report Type:</label>
+            <select name="report_type">
+                <option value="summary">Summary</option>
+                <option value="part">Part Report</option>
+                <option value="full">Full Report</option>
+            </select>
 
-</div>
+            <button type="submit">Generate Report</button>
+
+        </form>
+
+    </div>
+
+    <!-- ================= FOOTER ================= -->
+    <footer style="text-align:center; margin-top:20px;">
+        <p>Developed by Biswa</p>
+    </footer>
 
 </div>
 
-<div class="footer">Created by Biswa Ranjan Mishra 🚀</div>
+<!-- ================= VALIDATION SCRIPT ================= -->
+<script>
+function validateForm() {
+
+    let inputs = document.querySelectorAll("input[type='number']");
+
+    for (let input of inputs) {
+        if (input.value === "") {
+            input.value = 0;
+        }
+    }
+
+    return true;
+}
+</script>
 
 </body>
 </html>
