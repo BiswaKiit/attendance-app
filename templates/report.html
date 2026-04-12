@@ -15,7 +15,7 @@ body {
 .container {
     max-width: 600px;
     margin: auto;
-    padding: 15px;
+    padding: 10px;
 }
 
 .card {
@@ -30,17 +30,37 @@ h2, h3 {
     text-align: center;
 }
 
+.floor {
+    background: #f1f5f9;
+    padding: 10px;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+.total {
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.grand {
+    background: #e0f2fe;
+    padding: 10px;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
 button {
     width: 100%;
     padding: 12px;
     margin-top: 8px;
     border: none;
     border-radius: 10px;
-    background: #00c853;
+    background: #22c55e;
     color: white;
     font-size: 16px;
 }
 </style>
+
 </head>
 
 <body>
@@ -50,81 +70,93 @@ button {
 <h2>🏠 KING PALACE - 15</h2>
 <h3>📅 {{ date }}</h3>
 
+<div class="card">
+
 <!-- ✅ SUMMARY -->
 {% if report_type == "summary" %}
-<div class="card">
-<h3>Summary Report</h3>
-<p>Total Strength: {{ grand.S }}</p>
-<p>Total Present: {{ grand.P }}</p>
-<p>Total Leave: {{ total_leave }}</p>
-</div>
+<h3>Summary</h3>
+
+<p><b>Total Strength:</b> {{ grand.S }}</p>
+<p><b>Total Present:</b> {{ grand.P }}</p>
+<p><b>Total Leave:</b> {{ grand.L + grand.A }}</p>
+
 {% endif %}
+
 
 <!-- ✅ PART REPORT -->
 {% if report_type == "partly" %}
-<div class="card">
-<h3>Part Report (Floor Wise)</h3>
+<h3>Part Report (Year Wise)</h3>
 
-{% for floor, val in floor_totals.items() %}
+{% for year, val in year_summary.items() %}
 <p>
-<b>{{ floor }}</b> → 
-S: {{ val.S }} | 
-P: {{ val.P }} | 
-L: {{ val.L + val.A }}
+{{ year }} → 
+S: {{ val.Strength }} | 
+P: {{ val.Present }} | 
+L: {{ val.Leave }}
 </p>
 {% endfor %}
 
 <hr>
-<b>Grand Total</b><br>
-S: {{ grand.S }} | 
-P: {{ grand.P }} | 
-L: {{ total_leave }}
 
+<div class="grand">
+Total Strength: {{ grand.S }} <br>
+Total Present: {{ grand.P }} <br>
+Total Leave: {{ grand.L + grand.A }}
 </div>
+
 {% endif %}
+
 
 <!-- ✅ FULL REPORT -->
 {% if report_type == "full" %}
-<div class="card">
 <h3>Full Report</h3>
 
-{% for floor, years in data.items() %}
-<hr>
-<b>{{ floor }} ({{ floor_totals[floor].attendant }})</b>
+{% for floor, fdata in data.items() %}
 
-{% for year, v in years.items() %}
+<div class="floor">
+
+<b>{{ floor }}</b>  
+<br>👤 Attendant: {{ fdata.attendant }}
+
+{% for year, val in fdata.years.items() %}
 <p>
 {{ year }} → 
-S: {{ v.S }} | 
-P: {{ v.P }} | 
-L: {{ v.L }} | 
-A: {{ v.A }}
+S: {{ val.S }} | 
+P: {{ val.P }} | 
+L: {{ val.L }} | 
+A: {{ val.A }}
 </p>
 {% endfor %}
 
-<p><b>Floor Total → 
+<div class="total">
+Total → 
 S: {{ floor_totals[floor].S }} | 
 P: {{ floor_totals[floor].P }} | 
 L: {{ floor_totals[floor].L }} | 
 A: {{ floor_totals[floor].A }}
-</b></p>
+</div>
+
+</div>
 
 {% endfor %}
 
 <hr>
-<h3>Grand Total</h3>
-<p>
-S: {{ grand.S }} | 
-P: {{ grand.P }} | 
-L: {{ grand.L }} | 
-A: {{ grand.A }}
-</p>
 
+<div class="grand">
+Grand Total → <br>
+Strength: {{ grand.S }} <br>
+Present: {{ grand.P }} <br>
+Leave: {{ grand.L }} <br>
+Absent: {{ grand.A }}
 </div>
+
 {% endif %}
 
-<!-- ✅ BUTTONS -->
-<button onclick="shareReport()">📤 Share</button>
+</div>
+
+<!-- ✅ ACTION BUTTONS -->
+
+<button onclick="shareReport()">📤 Share (WhatsApp)</button>
 
 <a href="/download-pdf?date={{ date }}">
 <button>📄 Download PDF</button>
@@ -142,13 +174,11 @@ text += "📅 {{ date }}\n\n";
 
 text += "Total Strength: {{ grand.S }}\n";
 text += "Total Present: {{ grand.P }}\n";
-text += "Total Leave: {{ total_leave }}\n";
+text += "Total Leave: {{ grand.L + grand.A }}\n";
 
-if (navigator.share) {
-    navigator.share({title:"Report", text:text});
-} else {
-    alert(text);
-}
+let url = "https://wa.me/?text=" + encodeURIComponent(text);
+window.open(url, "_blank");
+
 }
 </script>
 
