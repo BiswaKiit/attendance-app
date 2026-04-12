@@ -2,18 +2,21 @@ from flask import Flask, render_template, request, send_file
 import psycopg2
 import os
 
+# PDF
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+
 app = Flask(__name__)
 
+# 🔗 DATABASE
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 floors = ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor", "4th Floor"]
 years = ["1st Year", "2nd Year", "3rd Year", "4th Year"]
 
-
 # 🔌 DB CONNECTION
 def get_conn():
     return psycopg2.connect(DATABASE_URL)
-
 
 # 🔢 SAFE INT
 def to_int(val):
@@ -22,8 +25,7 @@ def to_int(val):
     except:
         return 0
 
-
-# 🛠 CREATE / FIX TABLE
+# 🛠 CREATE TABLE
 def create_table():
     conn = get_conn()
     cur = conn.cursor()
@@ -43,15 +45,8 @@ def create_table():
     )
     """)
 
-    # 🔥 FIX OLD DB (ADD COLUMN IF MISSING)
-    cur.execute("""
-    ALTER TABLE attendance
-    ADD COLUMN IF NOT EXISTS attendant TEXT
-    """)
-
     conn.commit()
     conn.close()
-
 
 # 🚀 HOME
 @app.route("/", methods=["GET", "POST"])
@@ -64,7 +59,6 @@ def index():
             floor = request.form.get("floor")
             date = request.form.get("date")
             attendant = request.form.get("attendant")
-            hostel = "KING PALACE - 15"
             floor_strength = to_int(request.form.get("floor_strength"))
 
             if not floor or not date or not attendant:
@@ -74,14 +68,13 @@ def index():
             conn = get_conn()
             cur = conn.cursor()
 
-            # ❌ DUPLICATE CHECK
             cur.execute("SELECT 1 FROM attendance WHERE date=%s AND floor=%s", (date, floor))
             if cur.fetchone():
                 conn.close()
                 return render_template("index.html", floors=floors, years=years,
-                                       message=f"❌ Already entered for {floor}")
+                                       message="❌ Already exists")
 
-            total_strength = 0
+            total_year_strength = 0
             valid = True
 
             for year in years:
@@ -93,14 +86,14 @@ def index():
                 if (p + l + a) != s:
                     valid = False
 
-                total_strength += s
+                total_year_strength += s
 
                 cur.execute("""
-                INSERT INTO attendance (date, hostel, floor, year, strength, present, leave, absent, attendant)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                """, (date, hostel, floor, year, s, p, l, a, attendant))
+                INSERT INTO attendance (date,floor,year,strength,present,leave,absent,attendant)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                """, (date, floor, year, s, p, l, a, attendant))
 
-            if total_strength != floor_strength:
+            if total_year_strength != floor_strength:
                 valid = False
 
             if not valid:
@@ -127,11 +120,9 @@ def report():
     conn = get_conn()
     cur = conn.cursor()
 
-    # 🔥 IMPORTANT FIX (handle NULL attendant)
     cur.execute("""
-    SELECT floor, year, strength, present, leave, absent, COALESCE(attendant,'N/A')
-    FROM attendance
-    WHERE date=%s
+    SELECT floor,year,strength,present,leave,absent,attendant
+    FROM attendance WHERE date=%s
     """, (date,))
 
     rows = cur.fetchall()
@@ -142,32 +133,30 @@ def report():
 
     data = {}
     floor_totals = {}
-    grand = {"S":0, "P":0, "L":0, "A":0}
     year_summary = {y: {"Strength":0, "Present":0, "Leave":0} for y in years}
+    grand = {"S":0, "P":0, "L":0, "A":0}
 
-    for floor, year, s, p, l, a, att in rows:
+    for floor, year, s, p, l, a, attendant in rows:
 
         if floor not in data:
-            data[floor] = {"years": {}, "attendant": att}
+            data[floor] = {"attendant": attendant or "N/A", "years": {}}
             floor_totals[floor] = {"S":0, "P":0, "L":0, "A":0}
 
-        data[floor]["years"][year] = {
-            "S": s, "P": p, "L": l, "A": a
-        }
+        data[floor]["years"][year] = {"S":s,"P":p,"L":l,"A":a}
 
         floor_totals[floor]["S"] += s
         floor_totals[floor]["P"] += p
         floor_totals[floor]["L"] += l
         floor_totals[floor]["A"] += a
 
+        year_summary[year]["Strength"] += s
+        year_summary[year]["Present"] += p
+        year_summary[year]["Leave"] += (l + a)
+
         grand["S"] += s
         grand["P"] += p
         grand["L"] += l
         grand["A"] += a
-
-        year_summary[year]["Strength"] += s
-        year_summary[year]["Present"] += p
-        year_summary[year]["Leave"] += (l + a)
 
     return render_template("report.html",
                            data=data,
@@ -178,12 +167,36 @@ def report():
                            date=date)
 
 
-# 📄 PDF
+# 📄 PDF DOWNLOAD
 @app.route("/download-pdf")
 def download_pdf():
-    return "PDF feature coming soon"
+    date = request.args.get("date")
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+    SELECT floor,year,strength,present,leave,absent
+    FROM attendance WHERE date=%s
+    """, (date,))
+
+    rows = cur.fetchall()
+    conn.close()
+
+    doc = SimpleDocTemplate("report.pdf")
+    styles = getSampleStyleSheet()
+
+    content = []
+    content.append(Paragraph("KING PALACE - 15", styles["Title"]))
+    content.append(Spacer(1, 10))
+
+    for r in rows:
+        content.append(Paragraph(str(r), styles["Normal"]))
+
+    doc.build(content)
+
+    return send_file("report.pdf", as_attachment=True)
 
 
-# ▶️ RUN
 if __name__ == "__main__":
     app.run(debug=True)

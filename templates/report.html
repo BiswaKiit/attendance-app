@@ -3,182 +3,87 @@
 <head>
 <title>Report</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <style>
-body {
-    font-family: Arial;
-    margin: 0;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-}
-
-.container {
-    max-width: 600px;
-    margin: auto;
-    padding: 10px;
-}
-
-.card {
-    background: white;
-    color: black;
-    padding: 15px;
-    border-radius: 15px;
-    margin-bottom: 15px;
-}
-
-h2, h3 {
-    text-align: center;
-}
-
-.floor {
-    background: #f1f5f9;
-    padding: 10px;
-    border-radius: 10px;
-    margin-top: 10px;
-}
-
-.total {
-    font-weight: bold;
-    margin-top: 5px;
-}
-
-.grand {
-    background: #e0f2fe;
-    padding: 10px;
-    border-radius: 10px;
-    font-weight: bold;
-}
-
-button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 8px;
-    border: none;
-    border-radius: 10px;
-    background: #22c55e;
-    color: white;
-    font-size: 16px;
-}
+body {font-family: Arial; background:#f1f5f9;}
+.container {max-width:500px;margin:auto;padding:10px;}
+.card {background:white;padding:15px;border-radius:10px;margin-bottom:10px;}
+h3 {margin:5px 0;}
+.total {font-weight:bold;color:#2563eb;}
 </style>
-
 </head>
 
 <body>
 
 <div class="container">
 
+<div class="card">
 <h2>🏠 KING PALACE - 15</h2>
-<h3>📅 {{ date }}</h3>
+<p>📅 {{date}}</p>
+</div>
+
+{% if report_type == "summary" %}
+<div class="card">
+<h3>Summary</h3>
+<p>Total Strength: {{grand.S}}</p>
+<p>Total Present: {{grand.P}}</p>
+<p>Total Leave: {{grand.L + grand.A}}</p>
+</div>
+{% endif %}
+
+{% if report_type == "partly" %}
+<div class="card">
+<h3>Year Wise</h3>
+{% for y,v in year_summary.items() %}
+<p>{{y}} → S:{{v.Strength}} P:{{v.Present}} L:{{v.Leave}}</p>
+{% endfor %}
+</div>
+{% endif %}
+
+{% if report_type == "full" %}
+{% for floor,info in data.items() %}
+<div class="card">
+<h3>{{floor}} ({{info.attendant}})</h3>
+
+{% for y,v in info.years.items() %}
+<p>{{y}} → S:{{v.S}} P:{{v.P}} L:{{v.L}} A:{{v.A}}</p>
+{% endfor %}
+
+<p class="total">
+Total → S:{{floor_totals[floor].S}}
+P:{{floor_totals[floor].P}}
+L:{{floor_totals[floor].L}}
+A:{{floor_totals[floor].A}}
+</p>
+
+</div>
+{% endfor %}
+
+<div class="card total">
+Grand Total → 
+S:{{grand.S}} 
+P:{{grand.P}} 
+L:{{grand.L}} 
+A:{{grand.A}}
+</div>
+{% endif %}
 
 <div class="card">
-
-<!-- ✅ SUMMARY -->
-{% if report_type == "summary" %}
-<h3>Summary</h3>
-
-<p><b>Total Strength:</b> {{ grand.S }}</p>
-<p><b>Total Present:</b> {{ grand.P }}</p>
-<p><b>Total Leave:</b> {{ grand.L + grand.A }}</p>
-
-{% endif %}
-
-
-<!-- ✅ PART REPORT -->
-{% if report_type == "partly" %}
-<h3>Part Report (Year Wise)</h3>
-
-{% for year, val in year_summary.items() %}
-<p>
-{{ year }} → 
-S: {{ val.Strength }} | 
-P: {{ val.Present }} | 
-L: {{ val.Leave }}
-</p>
-{% endfor %}
-
-<hr>
-
-<div class="grand">
-Total Strength: {{ grand.S }} <br>
-Total Present: {{ grand.P }} <br>
-Total Leave: {{ grand.L + grand.A }}
+<button onclick="share()">📤 Share</button>
+<a href="/download-pdf?date={{date}}"><button>📄 PDF</button></a>
 </div>
-
-{% endif %}
-
-
-<!-- ✅ FULL REPORT -->
-{% if report_type == "full" %}
-<h3>Full Report</h3>
-
-{% for floor, fdata in data.items() %}
-
-<div class="floor">
-
-<b>{{ floor }}</b>  
-<br>👤 Attendant: {{ fdata.attendant }}
-
-{% for year, val in fdata.years.items() %}
-<p>
-{{ year }} → 
-S: {{ val.S }} | 
-P: {{ val.P }} | 
-L: {{ val.L }} | 
-A: {{ val.A }}
-</p>
-{% endfor %}
-
-<div class="total">
-Total → 
-S: {{ floor_totals[floor].S }} | 
-P: {{ floor_totals[floor].P }} | 
-L: {{ floor_totals[floor].L }} | 
-A: {{ floor_totals[floor].A }}
-</div>
-
-</div>
-
-{% endfor %}
-
-<hr>
-
-<div class="grand">
-Grand Total → <br>
-Strength: {{ grand.S }} <br>
-Present: {{ grand.P }} <br>
-Leave: {{ grand.L }} <br>
-Absent: {{ grand.A }}
-</div>
-
-{% endif %}
-
-</div>
-
-<!-- ✅ ACTION BUTTONS -->
-
-<button onclick="shareReport()">📤 Share (WhatsApp)</button>
-
-<a href="/download-pdf?date={{ date }}">
-<button>📄 Download PDF</button>
-</a>
-
-<button onclick="window.print()">🖨️ Print</button>
 
 </div>
 
 <script>
-function shareReport() {
+function share(){
+let text = "🏠 KING PALACE - 15\nDate: {{date}}\n\n";
+text += "Strength: {{grand.S}}\nPresent: {{grand.P}}\nLeave: {{grand.L + grand.A}}";
 
-let text = "🏠 KING PALACE - 15\n";
-text += "📅 {{ date }}\n\n";
-
-text += "Total Strength: {{ grand.S }}\n";
-text += "Total Present: {{ grand.P }}\n";
-text += "Total Leave: {{ grand.L + grand.A }}\n";
-
-let url = "https://wa.me/?text=" + encodeURIComponent(text);
-window.open(url, "_blank");
-
+if(navigator.share){
+navigator.share({text:text});
+}else{
+alert(text);
+}
 }
 </script>
 
