@@ -1,34 +1,200 @@
-<h2>🏠 KING PALACE - 15</h2>
-<h3>📅 {{date}}</h3>
+<!DOCTYPE html>
+<html>
+<head>
+<title>Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<style>
+body {
+    font-family: Arial;
+    margin: 0;
+    background: #f5f5f5;
+}
+
+.container {
+    max-width: 600px;
+    margin: auto;
+    padding: 10px;
+}
+
+.card {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+h2, h3 {
+    text-align: center;
+}
+
+.floor {
+    background: #4facfe;
+    color: white;
+    padding: 8px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.total {
+    background: #00c853;
+    color: white;
+    padding: 10px;
+    border-radius: 10px;
+    margin-top: 15px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 8px;
+    background: #4facfe;
+    color: white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>🏠 KING PALACE - 15</h2>
+
+{% if date %}
+<h3>📅 {{ date }}</h3>
+{% elif month %}
+<h3>📅 {{ month }}</h3>
+{% endif %}
+
+<!-- ✅ SUMMARY -->
+{% if report_type == "summary" %}
+
+<div class="card">
+<h3>Summary</h3>
+
+<p><b>Total Strength:</b> {{ grand.strength }}</p>
+<p><b>Total Present:</b> {{ grand.present }}</p>
+<p><b>Total Leave:</b> {{ grand.leave }}</p>
+<p><b>Total Absent:</b> {{ grand.absent }}</p>
+
+</div>
+
+{% endif %}
+
+<!-- ✅ PART REPORT -->
+{% if report_type == "partly" %}
+
+{% for floor, years in data.items() %}
+<div class="card">
+
+<div class="floor">
+{{ floor }} (👤 {{ attendants[floor] or "N/A" }})
+</div>
+
+{% set fs = 0 %}
+{% set fp = 0 %}
+{% set fl = 0 %}
+{% set fa = 0 %}
+
+{% for year, val in years.items() %}
+<p>
+{{ year }} → S: {{ val.Strength }} |
+P: {{ val.Present }} |
+L: {{ val.Leave }} |
+A: {{ val.Absent }}
+</p>
+
+{% set fs = fs + val.Strength %}
+{% set fp = fp + val.Present %}
+{% set fl = fl + val.Leave %}
+{% set fa = fa + val.Absent %}
+
+{% endfor %}
+
+<hr>
+
+<p><b>Floor Total → S: {{ fs }} | P: {{ fp }} | L: {{ fl }} | A: {{ fa }}</b></p>
+
+</div>
+{% endfor %}
+
+{% endif %}
+
+<!-- ✅ FULL REPORT -->
 {% if report_type == "full" %}
 
-{% for floor, val in data.items() %}
-<h3>{{floor}} ({{val.attendant}})</h3>
+{% for floor, years in data.items() %}
+<div class="card">
 
-{% for y, d in val.years.items() %}
-<p>{{y}} → S:{{d.S}} P:{{d.P}} L:{{d.L}} A:{{d.A}}</p>
+<div class="floor">
+{{ floor }} (👤 {{ attendants[floor] or "N/A" }})
+</div>
+
+<table border="1" width="100%">
+<tr>
+<th>Year</th>
+<th>S</th>
+<th>P</th>
+<th>L</th>
+<th>A</th>
+</tr>
+
+{% set fs = 0 %}
+{% set fp = 0 %}
+{% set fl = 0 %}
+{% set fa = 0 %}
+
+{% for year, val in years.items() %}
+<tr>
+<td>{{ year }}</td>
+<td>{{ val.Strength }}</td>
+<td>{{ val.Present }}</td>
+<td>{{ val.Leave }}</td>
+<td>{{ val.Absent }}</td>
+</tr>
+
+{% set fs = fs + val.Strength %}
+{% set fp = fp + val.Present %}
+{% set fl = fl + val.Leave %}
+{% set fa = fa + val.Absent %}
+
 {% endfor %}
 
-<p><b>Floor Total → S:{{val.total.S}} P:{{val.total.P}} L:{{val.total.L}} A:{{val.total.A}}</b></p>
-<hr>
-{% endfor %}
+<tr>
+<th>Total</th>
+<th>{{ fs }}</th>
+<th>{{ fp }}</th>
+<th>{{ fl }}</th>
+<th>{{ fa }}</th>
+</tr>
 
-<h3>Grand Total</h3>
-<p>S:{{grand.S}} P:{{grand.P}} L:{{grand.L}} A:{{grand.A}}</p>
+</table>
+
+</div>
+{% endfor %}
 
 {% endif %}
 
+<!-- ✅ GRAND TOTAL -->
+<div class="total">
+<b>GRAND TOTAL → 
+S: {{ grand.strength }} |
+P: {{ grand.present }} |
+L: {{ grand.leave }} |
+A: {{ grand.absent }}
+</b>
+</div>
 
-{% if report_type == "partly" %}
-{% for y,val in year_summary.items() %}
-<p>{{y}} → S:{{val.S}} P:{{val.P}} L:{{val.L}}</p>
-{% endfor %}
-{% endif %}
+<!-- ACTIONS -->
+<button onclick="window.print()">🖨️ Print</button>
 
+<a href="/download?date={{ date }}">
+<button>📊 Download Excel</button>
+</a>
 
-{% if report_type == "summary" %}
-<p>Total Strength: {{grand.S}}</p>
-<p>Total Present: {{grand.P}}</p>
-<p>Total Leave: {{grand.L}}</p>
-{% endif %}
+</div>
+
+</body>
+</html>
