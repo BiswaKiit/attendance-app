@@ -1,208 +1,195 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, make_response
-import json
+from flask import Flask, render_template, request, send_file
+import psycopg2
+import pandas as pd
 import os
-from datetime import datetime
+
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
 app = Flask(__name__)
 
-DATA_FILE = "data.json"
+DATABASE_URL = os.getenv("DATABASE_URL") or "postgresql://attendance_user:hIEyKUeKKblpFAYtYXjcDp5GCXGQZcbl@dpg-d7b5hdjuibrs73b6m1d0-a.oregon-postgres.render.com/attendance_2cet"
 
-ATTENDANTS = ["Sunam", "Rabi Narayan", "Nrushingha", "Satya", "Alok", "Sarat", "Subasish"]
+floors = ["Ground Floor", "1st Floor", "2nd Floor", "3rd Floor", "4th Floor"]
+years = ["1st Year", "2nd Year", "3rd Year", "4th Year"]
 
-# ---------- LOAD / SAVE ----------
-def load_data():
-    if not os.path.exists(DATA_FILE):
-        return {}
-    with open(DATA_FILE, "r") as f:
-        return json.load(f)
+def get_conn():
+    return psycopg2.connect(DATABASE_URL)
 
-def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=4)
+def to_int(val):
+    try:
+        return int(val)
+    except:
+        return 0
 
-# ---------- HOME ----------
-@app.route("/")
+def create_table():
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS attendance (
+        id SERIAL PRIMARY KEY,
+        date DATE,
+        hostel TEXT,
+        floor TEXT,
+        year TEXT,
+        strength INT,
+        present INT,
+        leave INT,
+        absent INT,
+        attendant TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+# ================== ENTRY ==================
+@app.route("/", methods=["GET", "POST"])
 def index():
-    return render_template("index.html", attendants=ATTENDANTS)
+    create_table()
+    message = ""
 
-# ---------- SAVE ----------
-@app.route("/save", methods=["POST"])
-def save():
-    data = load_data()
+    if request.method == "POST":
+        try:
+            floor = request.form.get("floor")
+            date = request.form.get("date")
+            attendant = request.form.get("attendant")
+            floor_strength = to_int(request.form.get("floor_strength"))
 
-    date = request.form.get("date")
+            conn = get_conn()
+            cur = conn.cursor()
 
-    floors = ["Ground", "1st", "2nd", "3rd"]
-    years = ["1st Year", "2nd Year", "3rd Year", "4th Year"]
+            cur.execute("SELECT 1 FROM attendance WHERE date=%s AND floor=%s", (date, floor))
+            if cur.fetchone():
+                return render_template("index.html", floors=floors, years=years,
+                                       message=f"❌ Already entered for {floor}")
 
-    entry = {}
+            total_year_strength = 0
+            valid = True
 
-    for floor in floors:
-        entry[floor] = {
-            "attendant": request.form.get(f"{floor}_attendant"),
-            "strength": int(request.form.get(f"{floor}_strength") or 0),
-            "years": {}
-        }
+            for year in years:
+                strength = to_int(request.form.get(f"{year}_strength"))
+                present = to_int(request.form.get(f"{year}_present"))
+                leave = to_int(request.form.get(f"{year}_leave"))
+                absent = to_int(request.form.get(f"{year}_absent"))
 
-        floor_total = 0
+                if (present + leave + absent) != strength:
+                    valid = False
 
-        for year in years:
-            s = int(request.form.get(f"{floor}_{year}_strength") or 0)
-            p = int(request.form.get(f"{floor}_{year}_present") or 0)
-            l = int(request.form.get(f"{floor}_{year}_leave") or 0)
-            a = int(request.form.get(f"{floor}_{year}_absent") or 0)
+                total_year_strength += strength
 
-            # validation
-            if s != p + l + a:
-                return f"Error: {floor} - {year} mismatch"
+                cur.execute("""
+                INSERT INTO attendance (date,floor,year,strength,present,leave,absent,attendant)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                """, (date, floor, year, strength, present, leave, absent, attendant))
 
-            floor_total += s
+            if total_year_strength != floor_strength:
+                valid = False
 
-            entry[floor]["years"][year] = {
-                "Strength": s,
-                "Present": p,
-                "Leave": l,
-                "Absent": a
-            }
+            if not valid:
+                conn.rollback()
+                message = "❌ Data mismatch!"
+            else:
+                conn.commit()
+                message = "✅ Saved Successfully!"
 
-        if floor_total != entry[floor]["strength"]:
-            return f"Error: {floor} total mismatch"
+            conn.close()
 
-    data[date] = entry
-    save_data(data)
+        except Exception as e:
+            message = str(e)
 
-    return redirect(url_for("index"))
+    return render_template("index.html", floors=floors, years=years, message=message)
 
-# ---------- REPORT ----------
+# ================== REPORT ==================
 @app.route("/report", methods=["POST"])
 def report():
-    data = load_data()
-
-    date = request.form.get("date")
     report_type = request.form.get("report_type")
+    date = request.form.get("date")
 
-    if date not in data:
-        return "No data found"
+    conn = get_conn()
+    cur = conn.cursor()
 
-    entry = data[date]
+    cur.execute("""
+    SELECT floor,year,strength,present,leave,absent,attendant
+    FROM attendance WHERE date=%s
+    """, (date,))
 
-    total_strength = total_present = total_leave = total_absent = 0
+    rows = cur.fetchall()
+    conn.close()
 
-    full_data = {}
+    if not rows:
+        return "❌ No data found"
 
-    for floor, fdata in entry.items():
-        floor_totals = {"Strength":0,"Present":0,"Leave":0,"Absent":0}
-        years = {}
+    data = {}
+    grand = {"S":0,"P":0,"L":0,"A":0}
 
-        for year, y in fdata["years"].items():
-            years[year] = y
+    year_summary = {y: {"S":0,"P":0,"L":0} for y in years}
 
-            floor_totals["Strength"] += y["Strength"]
-            floor_totals["Present"] += y["Present"]
-            floor_totals["Leave"] += y["Leave"]
-            floor_totals["Absent"] += y["Absent"]
+    for floor,year,strength,present,leave,absent,attendant in rows:
 
-        full_data[floor] = {
-            "years": years,
-            "totals": floor_totals,
-            "attendant": fdata["attendant"]
+        if floor not in data:
+            data[floor] = {
+                "years": {},
+                "attendant": attendant,
+                "total": {"S":0,"P":0,"L":0,"A":0}
+            }
+
+        data[floor]["years"][year] = {
+            "S":strength,"P":present,"L":leave,"A":absent
         }
 
-        total_strength += floor_totals["Strength"]
-        total_present += floor_totals["Present"]
-        total_leave += floor_totals["Leave"]
-        total_absent += floor_totals["Absent"]
+        # floor total
+        data[floor]["total"]["S"] += strength
+        data[floor]["total"]["P"] += present
+        data[floor]["total"]["L"] += leave
+        data[floor]["total"]["A"] += absent
 
-    return render_template(
-        "report.html",
-        report_type=report_type,
-        data=full_data,
-        total_strength=total_strength,
-        total_present=total_present,
-        total_leave=total_leave + total_absent,
-        date=date
-    )
+        # grand total
+        grand["S"] += strength
+        grand["P"] += present
+        grand["L"] += leave
+        grand["A"] += absent
 
-# ---------- SHARE ----------
-@app.route("/share/<date>")
-def share(date):
-    data = load_data()
+        # year summary
+        year_summary[year]["S"] += strength
+        year_summary[year]["P"] += present
+        year_summary[year]["L"] += (leave+absent)
 
-    if date not in data:
-        return "No data"
+    return render_template("report.html",
+                           data=data,
+                           report_type=report_type,
+                           year_summary=year_summary,
+                           grand=grand,
+                           date=date)
 
-    entry = data[date]
+# ================== PDF ==================
+@app.route("/download-pdf")
+def download_pdf():
+    date = request.args.get("date")
 
-    total_s = total_p = total_l = total_a = 0
+    conn = get_conn()
+    cur = conn.cursor()
 
-    for floor in entry.values():
-        for y in floor["years"].values():
-            total_s += y["Strength"]
-            total_p += y["Present"]
-            total_l += y["Leave"]
-            total_a += y["Absent"]
+    cur.execute("SELECT floor,year,strength,present,leave,absent FROM attendance WHERE date=%s",(date,))
+    rows = cur.fetchall()
+    conn.close()
 
-    text = f"""
-KING PALACE - 15
-
-Date: {date}
-
-Total Strength: {total_s}
-Total Present: {total_p}
-Total Leave: {total_l + total_a}
-"""
-
-    return jsonify({"text": text})
-
-# ---------- PDF ----------
-@app.route("/download/<date>")
-def download(date):
-    data = load_data()
-
-    if date not in data:
-        return "No data"
-
-    entry = data[date]
-
-    filename = f"report_{date}.pdf"
-    doc = SimpleDocTemplate(filename)
-
+    file = "report.pdf"
+    doc = SimpleDocTemplate(file)
     styles = getSampleStyleSheet()
+
     content = []
-
     content.append(Paragraph("KING PALACE - 15", styles["Title"]))
-    content.append(Spacer(1, 10))
     content.append(Paragraph(f"Date: {date}", styles["Normal"]))
+    content.append(Spacer(1,10))
 
-    total_s = total_p = total_l = total_a = 0
-
-    for floor, fdata in entry.items():
-        content.append(Spacer(1, 10))
-        content.append(Paragraph(f"{floor} Floor ({fdata['attendant']})", styles["Heading2"]))
-
-        for year, y in fdata["years"].items():
-            line = f"{year} → S:{y['Strength']} P:{y['Present']} L:{y['Leave']} A:{y['Absent']}"
-            content.append(Paragraph(line, styles["Normal"]))
-
-            total_s += y["Strength"]
-            total_p += y["Present"]
-            total_l += y["Leave"]
-            total_a += y["Absent"]
-
-    content.append(Spacer(1, 10))
-    content.append(Paragraph("Grand Total", styles["Heading2"]))
-    content.append(Paragraph(f"S:{total_s} P:{total_p} L:{total_l + total_a}", styles["Normal"]))
+    for r in rows:
+        content.append(Paragraph(str(r), styles["Normal"]))
 
     doc.build(content)
 
-    response = make_response(open(filename, "rb").read())
-    response.headers["Content-Type"] = "application/pdf"
-    response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+    return send_file(file, as_attachment=True)
 
-    return response
-
-# ---------- RUN ----------
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,11 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>KING PALACE - 15</title>
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="manifest" href="/static/manifest.json">
+    <title>Attendance App</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    font-family: Arial;
+    margin: 0;
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+}
+
+.container {
+    max-width: 500px;
+    margin: auto;
+    padding: 10px;
+}
+
+.title {
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.card {
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    margin-bottom: 15px;
+}
+
+input, select {
+    width: 100%;
+    padding: 8px;
+    margin: 4px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+.row {
+    display: flex;
+    gap: 5px;
+}
+
+.row input, .row select {
+    flex: 1;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: #4facfe;
+    color: white;
+}
+
+td, th {
+    padding: 6px;
+    text-align: center;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #00c853;
+    color: white;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+.success { color: green; }
+.error { color: red; }
+
+.footer {
+    text-align: center;
+    color: white;
+    margin: 10px;
+}
+</style>
 
 </head>
 
@@ -13,171 +90,94 @@
 
 <div class="container">
 
-    <h1 class="title">🏠 KING PALACE - 15</h1>
+<div class="title">🏨 KING PALACE - 15</div>
 
-    {% if message %}
-        <div class="msg">{{ message }}</div>
-    {% endif %}
+<!-- 📥 ENTRY -->
+<div class="card">
+<h3>📥 Attendance Entry</h3>
 
-    <!-- ================= ATTENDANCE ENTRY ================= -->
-    <div class="card entry-card">
+<form method="POST">
 
-        <h2>📋 Attendance Entry</h2>
+<input type="date" name="date" required>
 
-        <form method="POST" onsubmit="return validateForm()">
+<select name="floor" required>
+<option value="">Select Floor</option>
+{% for f in floors %}
+<option value="{{f}}">{{f}}</option>
+{% endfor %}
+</select>
 
-            <div class="top-row">
+<div class="row">
+<input type="number" name="floor_strength" placeholder="Floor Strength" required>
 
-                <input type="date" name="date" required>
+<select name="attendant" required>
+<option value="">Attendant</option>
+<option>Sunam</option>
+<option>Rabi Narayan</option>
+<option>Nrushingha</option>
+<option>Satya</option>
+<option>Alok</option>
+<option>Sarat</option>
+<option>Subasish</option>
+</select>
+</div>
 
-                <select name="floor" required>
-                    <option value="">Select Floor</option>
-                    {% for f in floors %}
-                        <option value="{{ f }}">{{ f }}</option>
-                    {% endfor %}
-                </select>
+<table border="1">
+<tr>
+<th>Year</th>
+<th>Str</th>
+<th>Pre</th>
+<th>Leave</th>
+<th>Abs</th>
+</tr>
 
-                <select name="attendant">
-                    <option>Sunam</option>
-                    <option>Rabi Narayan</option>
-                    <option>Nrushingha</option>
-                    <option>Satya</option>
-                    <option>Alok</option>
-                    <option>Sarat</option>
-                    <option>Subasish</option>
-                </select>
+{% for y in years %}
+<tr>
+<td>{{y}}</td>
+<td><input name="{{y}}_strength" required></td>
+<td><input name="{{y}}_present" required></td>
+<td><input name="{{y}}_leave" required></td>
+<td><input name="{{y}}_absent" required></td>
+</tr>
+{% endfor %}
 
-            </div>
+</table>
 
-            <div class="floor-box">
-                <label>Floor Strength</label>
-                <input type="number" name="floor_strength" readonly>
-            </div>
+<button type="submit">💾 Save Data</button>
 
-            <!-- TABLE -->
-            <table class="data-table">
-                <tr>
-                    <th>Year</th>
-                    <th>Strength</th>
-                    <th>Present</th>
-                    <th>Leave</th>
-                    <th>Absent</th>
-                </tr>
+</form>
 
-                {% for y in years %}
-                <tr>
-                    <td>{{ y }}</td>
-                    <td><input type="number" name="{{ y.split()[0] }}_strength" required></td>
-                    <td><input type="number" name="{{ y.split()[0] }}_present" required></td>
-                    <td><input type="number" name="{{ y.split()[0] }}_leave" required></td>
-                    <td><input type="number" name="{{ y.split()[0] }}_absent" required></td>
-                </tr>
-                {% endfor %}
-            </table>
-
-            <button type="submit" class="btn-save">💾 Save</button>
-
-        </form>
-    </div>
-
-
-    <!-- ================= REPORT GENERATION ================= -->
-    <div class="card report-card">
-
-        <h2>📊 Generate Report</h2>
-
-        <form action="/report" method="POST">
-
-            <input type="date" name="date" required>
-
-            <select name="report_type">
-                <option value="summary">Summary</option>
-                <option value="partly">Part Report</option>
-                <option value="full">Full Report</option>
-            </select>
-
-            <button type="submit" class="btn-report">Generate</button>
-
-        </form>
-
-    </div>
+{% if message %}
+<p class="{{ 'success' if '✅' in message else 'error' }}">{{message}}</p>
+{% endif %}
 
 </div>
 
-<!-- FOOTER -->
-<div class="footer">
-    Developed by ❤️ Biswa Ranjan Mishra
+
+<!-- 📊 REPORT -->
+<div class="card">
+<h3>📊 Generate Report</h3>
+
+<form method="POST" action="/report">
+
+<select name="report_type" required>
+<option value="">Select Type</option>
+<option value="summary">Summary</option>
+<option value="partly">Part Report</option>
+<option value="full">Full Report</option>
+</select>
+
+<input type="date" name="date" required>
+
+<button type="submit">📊 Generate</button>
+
+</form>
+
 </div>
 
-<!-- ================= SCRIPTS ================= -->
+</div>
 
-<script>
-
-// AUTO CALCULATION
-document.addEventListener("input", function () {
-
-    let years = ["1st", "2nd", "3rd", "4th"];
-    let totalStrength = 0;
-
-    years.forEach(y => {
-
-        let s = Number(document.querySelector(`[name='${y}_strength']`)?.value || 0);
-        let p = Number(document.querySelector(`[name='${y}_present']`)?.value || 0);
-        let l = Number(document.querySelector(`[name='${y}_leave']`)?.value || 0);
-        let a = Number(document.querySelector(`[name='${y}_absent']`)?.value || 0);
-
-        // highlight error
-        if (s !== (p + l + a)) {
-            document.querySelector(`[name='${y}_strength']`).style.border = "2px solid red";
-        } else {
-            document.querySelector(`[name='${y}_strength']`).style.border = "";
-        }
-
-        totalStrength += s;
-    });
-
-    document.querySelector("[name='floor_strength']").value = totalStrength;
-});
-
-
-// VALIDATION
-function validateForm() {
-
-    let years = ["1st", "2nd", "3rd", "4th"];
-    let totalStrength = 0;
-    let floorStrength = Number(document.querySelector("[name='floor_strength']").value || 0);
-
-    for (let y of years) {
-
-        let s = Number(document.querySelector(`[name='${y}_strength']`).value || 0);
-        let p = Number(document.querySelector(`[name='${y}_present']`).value || 0);
-        let l = Number(document.querySelector(`[name='${y}_leave']`).value || 0);
-        let a = Number(document.querySelector(`[name='${y}_absent']`).value || 0);
-
-        if (s !== (p + l + a)) {
-            alert(`${y} Year mismatch!`);
-            return false;
-        }
-
-        totalStrength += s;
-    }
-
-    if (floorStrength !== totalStrength) {
-        alert("Floor strength mismatch!");
-        return false;
-    }
-
-    return true;
-}
-
-
-// SERVICE WORKER
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/static/sw.js')
-    .then(() => console.log("Service Worker Registered"));
-}
-
-</script>
+<div class="footer">Created by Biswa Ranjan Mishra 🚀</div>
 
 </body>
 </html>

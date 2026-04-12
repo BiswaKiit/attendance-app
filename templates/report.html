@@ -1,117 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Report</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<h2>🏠 KING PALACE - 15</h2>
+<h3>📅 {{date}}</h3>
 
-<style>
-body { font-family: Arial; padding:15px; background:#f2f6ff; }
-.card { background:white; padding:15px; border-radius:10px; margin-bottom:15px; box-shadow:0 2px 10px rgba(0,0,0,0.1); }
-h2 { text-align:center; color:#2c3e50; }
-.total { font-weight:bold; color:green; margin-top:10px; }
-.floor { color:#007bff; }
-.footer { text-align:center; margin-top:20px; font-size:12px; color:#666; }
-button { padding:10px; border:none; border-radius:8px; background:#007bff; color:white; width:100%; margin-top:10px; }
-</style>
-
-</head>
-
-<body>
-
-<h2>🏨 KING PALACE - 15</h2>
-<h3 style="text-align:center;">📅 {{ date }}</h3>
-
-<!-- SUMMARY -->
-{% if report_type == "summary" %}
-<div class="card">
-    <p><b>Total Strength:</b> {{ total_strength }}</p>
-    <p><b>Total Present:</b> {{ total_present }}</p>
-    <p><b>Total Leave:</b> {{ total_leave }}</p>
-</div>
-{% endif %}
-
-<!-- PART REPORT -->
-{% if report_type == "partly" %}
-<div class="card">
-    {% for year, val in year_summary.items() %}
-        <p>{{ year }} → Strength: {{ val.Strength }}, Present: {{ val.Present }}, Leave: {{ val.Leave }}</p>
-    {% endfor %}
-</div>
-{% endif %}
-
-<!-- FULL REPORT -->
 {% if report_type == "full" %}
-{% set g_strength = 0 %}
-{% set g_present = 0 %}
-{% set g_leave = 0 %}
-{% set g_absent = 0 %}
 
-{% for floor, years in data.items() %}
-<div class="card">
-    <h3 class="floor">{{ floor }}</h3>
+{% for floor, val in data.items() %}
+<h3>{{floor}} ({{val.attendant}})</h3>
 
-    {% set f_strength = 0 %}
-    {% set f_present = 0 %}
-    {% set f_leave = 0 %}
-    {% set f_absent = 0 %}
-
-    {% for year, val in years.items() %}
-        <p>{{ year }} → S: {{ val.Strength }}, P: {{ val.Present }}, L: {{ val.Leave }}, A: {{ val.Absent }}</p>
-
-        {% set f_strength = f_strength + val.Strength %}
-        {% set f_present = f_present + val.Present %}
-        {% set f_leave = f_leave + val.Leave %}
-        {% set f_absent = f_absent + val.Absent %}
-    {% endfor %}
-
-    <div class="total">
-        Floor Total → S: {{ f_strength }}, P: {{ f_present }}, L: {{ f_leave }}, A: {{ f_absent }}
-    </div>
-
-    <p><b>Attendant:</b> {{ years.values()|list|first.attendant if years else "" }}</p>
-
-</div>
-
-{% set g_strength = g_strength + f_strength %}
-{% set g_present = g_present + f_present %}
-{% set g_leave = g_leave + f_leave %}
-{% set g_absent = g_absent + f_absent %}
-
+{% for y, d in val.years.items() %}
+<p>{{y}} → S:{{d.S}} P:{{d.P}} L:{{d.L}} A:{{d.A}}</p>
 {% endfor %}
 
-<div class="card total">
-    <h3>Grand Total</h3>
-    <p>S: {{ g_strength }} | P: {{ g_present }} | L: {{ g_leave }} | A: {{ g_absent }}</p>
-</div>
+<p><b>Floor Total → S:{{val.total.S}} P:{{val.total.P}} L:{{val.total.L}} A:{{val.total.A}}</b></p>
+<hr>
+{% endfor %}
+
+<h3>Grand Total</h3>
+<p>S:{{grand.S}} P:{{grand.P}} L:{{grand.L}} A:{{grand.A}}</p>
 
 {% endif %}
 
-<!-- BUTTONS -->
-<div class="card">
-    <button onclick="shareReport()">📤 Share</button>
-    <a href="/download-pdf?date={{ date }}"><button>📥 Download PDF</button></a>
-</div>
 
-<div class="footer">
-Created by Biswa Ranjan Mishra
-</div>
+{% if report_type == "partly" %}
+{% for y,val in year_summary.items() %}
+<p>{{y}} → S:{{val.S}} P:{{val.P}} L:{{val.L}}</p>
+{% endfor %}
+{% endif %}
 
-<script>
-function shareReport() {
-    let text = `🏨 KING PALACE - 15
-📅 Date: {{ date }}
 
-Total Strength: {{ total_strength }}
-Total Present: {{ total_present }}
-Total Leave: {{ total_leave }}`;
-
-    if (navigator.share) {
-        navigator.share({ text: text });
-    } else {
-        alert(text);
-    }
-}
-</script>
-
-</body>
-</html>
+{% if report_type == "summary" %}
+<p>Total Strength: {{grand.S}}</p>
+<p>Total Present: {{grand.P}}</p>
+<p>Total Leave: {{grand.L}}</p>
+{% endif %}
