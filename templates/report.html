@@ -62,11 +62,7 @@ button {
 
 <h2>🏠 KING PALACE - 15</h2>
 
-{% if date %}
 <h3>📅 {{ date }}</h3>
-{% elif month %}
-<h3>📅 {{ month }}</h3>
-{% endif %}
 
 <!-- ✅ SUMMARY -->
 {% if report_type == "summary" %}
@@ -76,8 +72,7 @@ button {
 
 <p><b>Total Strength:</b> {{ grand.strength }}</p>
 <p><b>Total Present:</b> {{ grand.present }}</p>
-<p><b>Total Leave:</b> {{ grand.leave }}</p>
-<p><b>Total Absent:</b> {{ grand.absent }}</p>
+<p><b>Total Leave:</b> {{ grand.leave + grand.absent }}</p>
 
 </div>
 
@@ -93,11 +88,6 @@ button {
 {{ floor }} (👤 {{ attendants[floor] or "N/A" }})
 </div>
 
-{% set fs = 0 %}
-{% set fp = 0 %}
-{% set fl = 0 %}
-{% set fa = 0 %}
-
 {% for year, val in years.items() %}
 <p>
 {{ year }} → S: {{ val.Strength }} |
@@ -105,17 +95,17 @@ P: {{ val.Present }} |
 L: {{ val.Leave }} |
 A: {{ val.Absent }}
 </p>
-
-{% set fs = fs + val.Strength %}
-{% set fp = fp + val.Present %}
-{% set fl = fl + val.Leave %}
-{% set fa = fa + val.Absent %}
-
 {% endfor %}
 
 <hr>
 
-<p><b>Floor Total → S: {{ fs }} | P: {{ fp }} | L: {{ fl }} | A: {{ fa }}</b></p>
+<p><b>
+Floor Total → 
+S: {{ floor_totals[floor].s }} | 
+P: {{ floor_totals[floor].p }} | 
+L: {{ floor_totals[floor].l }} | 
+A: {{ floor_totals[floor].a }}
+</b></p>
 
 </div>
 {% endfor %}
@@ -141,11 +131,6 @@ A: {{ val.Absent }}
 <th>A</th>
 </tr>
 
-{% set fs = 0 %}
-{% set fp = 0 %}
-{% set fl = 0 %}
-{% set fa = 0 %}
-
 {% for year, val in years.items() %}
 <tr>
 <td>{{ year }}</td>
@@ -154,20 +139,14 @@ A: {{ val.Absent }}
 <td>{{ val.Leave }}</td>
 <td>{{ val.Absent }}</td>
 </tr>
-
-{% set fs = fs + val.Strength %}
-{% set fp = fp + val.Present %}
-{% set fl = fl + val.Leave %}
-{% set fa = fa + val.Absent %}
-
 {% endfor %}
 
 <tr>
 <th>Total</th>
-<th>{{ fs }}</th>
-<th>{{ fp }}</th>
-<th>{{ fl }}</th>
-<th>{{ fa }}</th>
+<th>{{ floor_totals[floor].s }}</th>
+<th>{{ floor_totals[floor].p }}</th>
+<th>{{ floor_totals[floor].l }}</th>
+<th>{{ floor_totals[floor].a }}</th>
 </tr>
 
 </table>
@@ -179,7 +158,8 @@ A: {{ val.Absent }}
 
 <!-- ✅ GRAND TOTAL -->
 <div class="total">
-<b>GRAND TOTAL → 
+<b>
+GRAND TOTAL → 
 S: {{ grand.strength }} |
 P: {{ grand.present }} |
 L: {{ grand.leave }} |
@@ -187,14 +167,24 @@ A: {{ grand.absent }}
 </b>
 </div>
 
-<!-- ACTIONS -->
+<!-- ✅ ACTIONS -->
 <button onclick="window.print()">🖨️ Print</button>
 
-<a href="/download?date={{ date }}">
-<button>📊 Download Excel</button>
+<a href="/download-pdf?date={{ date }}">
+<button>📄 Download PDF</button>
 </a>
 
+<button onclick="shareWhatsApp()">📤 Share</button>
+
 </div>
+
+<script>
+function shareWhatsApp() {
+    let text = document.body.innerText;
+    let url = "https://wa.me/?text=" + encodeURIComponent(text);
+    window.open(url, "_blank");
+}
+</script>
 
 </body>
 </html>
