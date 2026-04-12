@@ -197,6 +197,16 @@ def download_pdf():
 
     return send_file("report.pdf", as_attachment=True)
 
+@app.route("/delete-old")
+def delete_old():
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("DELETE FROM attendance WHERE date = '2026-04-06'")
+    conn.commit()
+    conn.close()
+
+    return "✅ 6th April data deleted"
 
 if __name__ == "__main__":
     app.run(debug=True)
