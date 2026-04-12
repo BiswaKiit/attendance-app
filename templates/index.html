@@ -1,119 +1,182 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Attendance App</title>
+    <title>KING PALACE - 15</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="manifest" href="/static/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- ✅ PWA Support -->
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="apple-touch-icon" href="/static/favicon.png">
 </head>
 
 <body>
 
 <div class="container">
 
-    <h1>KING PALACE - 15</h1>
+    <h1 class="title">🏠 KING PALACE - 15</h1>
 
-    <!-- ================= ATTENDANCE ENTRY CARD ================= -->
-    <div class="card">
+    {% if message %}
+        <div class="msg">{{ message }}</div>
+    {% endif %}
 
-        <h2>Attendance Entry</h2>
+    <!-- ================= ATTENDANCE ENTRY ================= -->
+    <div class="card entry-card">
 
-        <form method="POST" action="/save" onsubmit="return validateForm()">
+        <h2>📋 Attendance Entry</h2>
 
-            <label>Date:</label>
-            <input type="date" name="date" required>
+        <form method="POST" onsubmit="return validateForm()">
 
-            <hr>
+            <div class="top-row">
 
-            {% set floors = ["Ground", "1st", "2nd", "3rd"] %}
-            {% set years = ["1st Year", "2nd Year", "3rd Year", "4th Year"] %}
+                <input type="date" name="date" required>
 
-            {% for floor in floors %}
-                <div class="floor-box">
-
-                    <h3>{{ floor }} Floor</h3>
-
-                    <!-- Floor Strength + Attendant -->
-                    <div class="row">
-                        <input type="number" name="{{ floor }}_strength" placeholder="Floor Strength" required>
-
-                        <select name="{{ floor }}_attendant" required>
-                            <option value="">Select Attendant</option>
-                            {% for a in attendants %}
-                                <option value="{{ a }}">{{ a }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <!-- Year-wise Inputs -->
-                    {% for year in years %}
-                        <div class="row">
-                            <label>{{ year }}</label>
-
-                            <input type="number" name="{{ floor }}_{{ year }}_strength" placeholder="Strength" required>
-                            <input type="number" name="{{ floor }}_{{ year }}_present" placeholder="Present" required>
-                            <input type="number" name="{{ floor }}_{{ year }}_leave" placeholder="Leave" required>
-                            <input type="number" name="{{ floor }}_{{ year }}_absent" placeholder="Absent" required>
-                        </div>
+                <select name="floor" required>
+                    <option value="">Select Floor</option>
+                    {% for f in floors %}
+                        <option value="{{ f }}">{{ f }}</option>
                     {% endfor %}
+                </select>
 
-                </div>
-                <hr>
-            {% endfor %}
+                <select name="attendant">
+                    <option>Sunam</option>
+                    <option>Rabi Narayan</option>
+                    <option>Nrushingha</option>
+                    <option>Satya</option>
+                    <option>Alok</option>
+                    <option>Sarat</option>
+                    <option>Subasish</option>
+                </select>
 
-            <button type="submit">Save Attendance</button>
+            </div>
+
+            <div class="floor-box">
+                <label>Floor Strength</label>
+                <input type="number" name="floor_strength" readonly>
+            </div>
+
+            <!-- TABLE -->
+            <table class="data-table">
+                <tr>
+                    <th>Year</th>
+                    <th>Strength</th>
+                    <th>Present</th>
+                    <th>Leave</th>
+                    <th>Absent</th>
+                </tr>
+
+                {% for y in years %}
+                <tr>
+                    <td>{{ y }}</td>
+                    <td><input type="number" name="{{ y.split()[0] }}_strength" required></td>
+                    <td><input type="number" name="{{ y.split()[0] }}_present" required></td>
+                    <td><input type="number" name="{{ y.split()[0] }}_leave" required></td>
+                    <td><input type="number" name="{{ y.split()[0] }}_absent" required></td>
+                </tr>
+                {% endfor %}
+            </table>
+
+            <button type="submit" class="btn-save">💾 Save</button>
 
         </form>
     </div>
 
-    <!-- ================= REPORT CARD ================= -->
-    <div class="card">
 
-        <h2>Generate Report</h2>
+    <!-- ================= REPORT GENERATION ================= -->
+    <div class="card report-card">
 
-        <form method="POST" action="/report">
+        <h2>📊 Generate Report</h2>
 
-            <label>Select Date:</label>
+        <form action="/report" method="POST">
+
             <input type="date" name="date" required>
 
-            <label>Report Type:</label>
             <select name="report_type">
                 <option value="summary">Summary</option>
-                <option value="part">Part Report</option>
+                <option value="partly">Part Report</option>
                 <option value="full">Full Report</option>
             </select>
 
-            <button type="submit">Generate Report</button>
+            <button type="submit" class="btn-report">Generate</button>
 
         </form>
 
     </div>
 
-    <!-- ================= FOOTER ================= -->
-    <footer style="text-align:center; margin-top:20px;">
-        <p>Developed by Biswa</p>
-    </footer>
-
 </div>
 
-<!-- ================= VALIDATION SCRIPT ================= -->
+<!-- FOOTER -->
+<div class="footer">
+    Developed by ❤️ Biswa Ranjan Mishra
+</div>
+
+<!-- ================= SCRIPTS ================= -->
+
 <script>
+
+// AUTO CALCULATION
+document.addEventListener("input", function () {
+
+    let years = ["1st", "2nd", "3rd", "4th"];
+    let totalStrength = 0;
+
+    years.forEach(y => {
+
+        let s = Number(document.querySelector(`[name='${y}_strength']`)?.value || 0);
+        let p = Number(document.querySelector(`[name='${y}_present']`)?.value || 0);
+        let l = Number(document.querySelector(`[name='${y}_leave']`)?.value || 0);
+        let a = Number(document.querySelector(`[name='${y}_absent']`)?.value || 0);
+
+        // highlight error
+        if (s !== (p + l + a)) {
+            document.querySelector(`[name='${y}_strength']`).style.border = "2px solid red";
+        } else {
+            document.querySelector(`[name='${y}_strength']`).style.border = "";
+        }
+
+        totalStrength += s;
+    });
+
+    document.querySelector("[name='floor_strength']").value = totalStrength;
+});
+
+
+// VALIDATION
 function validateForm() {
 
-    let inputs = document.querySelectorAll("input[type='number']");
+    let years = ["1st", "2nd", "3rd", "4th"];
+    let totalStrength = 0;
+    let floorStrength = Number(document.querySelector("[name='floor_strength']").value || 0);
 
-    for (let input of inputs) {
-        if (input.value === "") {
-            input.value = 0;
+    for (let y of years) {
+
+        let s = Number(document.querySelector(`[name='${y}_strength']`).value || 0);
+        let p = Number(document.querySelector(`[name='${y}_present']`).value || 0);
+        let l = Number(document.querySelector(`[name='${y}_leave']`).value || 0);
+        let a = Number(document.querySelector(`[name='${y}_absent']`).value || 0);
+
+        if (s !== (p + l + a)) {
+            alert(`${y} Year mismatch!`);
+            return false;
         }
+
+        totalStrength += s;
+    }
+
+    if (floorStrength !== totalStrength) {
+        alert("Floor strength mismatch!");
+        return false;
     }
 
     return true;
 }
+
+
+// SERVICE WORKER
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js')
+    .then(() => console.log("Service Worker Registered"));
+}
+
 </script>
 
 </body>
